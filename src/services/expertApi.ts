@@ -1,0 +1,775 @@
+/**
+ * 投资专家只读研究接口客户端 (Strictly Read-Only Research API Client)
+ * 对接 FastAPI 后端：/api/health, /api/workbench, /api/radar, /api/research/{id},
+ * /api/quantstats/tearsheet, /api/audit, POST /api/lwc/native-window/{id}
+ * 永久禁止任何交易下单请求 (research_only = true, execution_allowed = false)。
+ */
+
+import { normalizeStockCode, parseStockCode } from '@/utils/format';
+import { apiRequestJson, apiRequestText } from './apiClient';
+
+export type DecisionAction =
+  | 'BUY'
+  | 'HOLD'
+  | 'SELL'
+  | 'WAIT'
+  | 'INSUFFICIENT_EVIDENCE';
+
+export type OrthogonalCluster =
+  | 'VALUATION_AND_ODDS'
+  | 'FUNDAMENTAL_AND_QUALITY'
+  | 'PRICE_TREND_AND_FLOW'
+  | 'INDUSTRY_AND_CATALYST'
+  | 'PORTFOLIO_AND_OPPORTUNITY_COST';
+
+export type ClaimKind =
+  | 'FACT'
+  | 'INFERENCE'
+  | 'HYPOTHESIS'
+  | 'UNKNOWN'
+  | 'RISK'
+  | 'COUNTEREVIDENCE';
+
+export type ConfidenceLevel = 'HIGH' | 'MEDIUM' | 'LOW' | 'UNKNOWN';
+
+export type VerificationStatus =
+  | 'SUPPORTED'
+  | 'CONFLICTED'
+  | 'UNVERIFIED'
+  | 'STALE'
+  | 'UNKNOWN'
+  | 'REJECTED';
+
+export type ValueTrapClassification =
+  | 'TRUE_TURNAROUND'
+  | 'VALUE_TRAP_WARNING'
+  | 'QUALITY_COMPOUNDER'
+  | 'NEUTRAL_OBSERVE'
+  | 'INSUFFICIENT_DATA';
+
+export type ETFSubtype = 'INDEX_ETF' | 'ACTIVE_ETF';
+
+export interface ProvenanceBadge {
+  source_id: string;
+  as_of: string;
+  confidence: ConfidenceLevel;
+  verification_status: VerificationStatus;
+  crosscheck_status: string;
+  claim_id?: string | null;
+}
+
+export interface GlobalGovernanceStatus {
+  pit_cutoff_summary: string;
+  ledger_status: string;
+  ledger_sha256_short: string;
+  crosscheck_summary: string;
+  execution_lock_label: string;
+  research_only: boolean;
+  execution_allowed: boolean;
+}
+
+export interface HealthResponse {
+  status: string;
+  version: string;
+  server_profile?: string;
+  api_contract_version?: number;
+  frontend_bundle_sha256?: string | null;
+  lan_ips?: string[];
+  vendor_assets?: Record<string, number>;
+  frontend_mode?: string;
+  dist_assets_count?: number;
+  execution_lock_label?: string;
+  research_only: boolean;
+  execution_allowed: boolean;
+}
+
+export interface MobilePairingInfo {
+  api_contract_version: number;
+  mobile_port: number;
+  lan_ips: string[];
+  primary_lan_ip: string | null;
+  tailscale_ip: string | null;
+  tailscale_dns: string | null;
+  lan_url: string;
+  remote_url: string;
+  device_token: string;
+  pairing_code: string;
+}
+
+export interface WebBundleManifest {
+  bundle_version: string;
+  bundle_sha256: string;
+  zip_sha256?: string;
+  zip_bytes?: number;
+  file_count: number;
+  total_bytes: number;
+  generated_at: string;
+  download_url?: string;
+}
+
+export interface AppReleaseInfo {
+  available: boolean;
+  reason?: string;
+  version_code?: number;
+  version_name?: string;
+  private_head_sha?: string;
+  signing_sha256?: string;
+  apk_filename?: string;
+  apk_bytes?: number;
+  apk_sha256?: string;
+  built_at?: string;
+  download_url?: string;
+}
+
+export interface StockPositionRow {
+  symbol: string;
+  name: string;
+  quantity: number;
+  close_price: number;
+  market_value: number;
+  weight_pct: number;
+  action: DecisionAction;
+  action_label_zh: string;
+  zero_position_test: string;
+  trigger_summary: string;
+  hypothesis_id: string;
+  hypothesis_status: string;
+  badge: ProvenanceBadge;
+}
+
+export interface HypothesisReviewRow {
+  hypothesis_id?: string;
+  id?: string;
+  symbol?: string;
+  status?: string;
+  summary?: string;
+  [key: string]: string | undefined;
+}
+
+export interface StockAccountSummary {
+  account_id: string;
+  account_name: string;
+  as_of: string;
+  reference_close_date: string;
+  total_asset: number;
+  frozen_baseline_total: number;
+  change_pct: number;
+  cash_amount: number;
+  cash_weight_pct: number;
+  plan_b_total: number;
+  plan_b_diff: number;
+  plan_b_diff_pct: number;
+  positions: StockPositionRow[];
+  hypothesis_reviews: HypothesisReviewRow[];
+  badge: ProvenanceBadge;
+}
+
+export interface FundPositionRow {
+  fund_code: string;
+  fund_name: string;
+  asset_value: number;
+  daily_pnl: number;
+  holding_pnl: number;
+  weight_pct: number;
+  risk_bucket: string;
+  pending_redemption_cny: number;
+  badge: ProvenanceBadge;
+}
+
+export interface RiskBucketRow {
+  bucket_name: string;
+  current_weight_pct: number;
+  post_redemption_weight_pct: number;
+  band_min_pct: number;
+  band_max_pct: number;
+  band_display: string;
+  status: string;
+}
+
+export interface PendingRedemptionOrder {
+  order_id: string;
+  submitted_at: string;
+  fund_code: string;
+  fund_name: string;
+  request_shares: number;
+  request_ratio_pct: number;
+  reference_nav_date: string;
+  reference_nav: number;
+  reference_gross_cny: number;
+  status: string;
+  expected_next_open_day: string;
+  post_confirm_remaining_shares: number;
+  intended_liquidity_role: string;
+}
+
+export interface FundAccountSummary {
+  account_id: string;
+  account_name: string;
+  as_of: string;
+  pending_as_of: string;
+  total_asset: number;
+  daily_pnl: number;
+  holding_pnl: number;
+  pending_redemption_total_cny: number;
+  redemption_state_chain: string;
+  holdings: FundPositionRow[];
+  risk_buckets: RiskBucketRow[];
+  pending_orders: PendingRedemptionOrder[];
+  badge: ProvenanceBadge;
+}
+
+export interface WorkbenchState {
+  governance: GlobalGovernanceStatus;
+  priority_alerts: string[];
+  stock_account: StockAccountSummary;
+  fund_account: FundAccountSummary;
+  registered_accounts: string[];
+  research_only: boolean;
+  execution_allowed: boolean;
+}
+
+export interface RawIndicatorEvidence {
+  indicator_id: string;
+  name: string;
+  cluster: OrthogonalCluster;
+  direction: number;
+  strength: number;
+  value_display: string;
+  summary: string;
+  is_red_flag_blocker: boolean;
+  claim_kind: ClaimKind;
+  badge: ProvenanceBadge;
+}
+
+export interface ClusterVoteSummary {
+  cluster: OrthogonalCluster;
+  net_direction: number;
+  deduped_score: number;
+  raw_indicator_count: number;
+  effective_independent_votes: number;
+  collinearity_suppressed_count: number;
+  has_red_flag: boolean;
+  has_conflict: boolean;
+  primary_evidence_summary: string;
+  indicators: RawIndicatorEvidence[];
+}
+
+export interface OrthogonalDecisionPacket {
+  subject_id: string;
+  subject_name: string;
+  asset_type: string;
+  as_of: string;
+  currently_held: boolean;
+  action: DecisionAction;
+  action_label_zh: string;
+  supporting_clusters_count: number;
+  contradicting_clusters_count: number;
+  unknown_clusters_count: number;
+  composite_conviction_score: number;
+  red_flag_blockers: string[];
+  unresolved_gaps: string[];
+  supporting_reasons: string[];
+  counter_reasons: string[];
+  change_triggers: string[];
+  cluster_votes: ClusterVoteSummary[];
+  research_only: boolean;
+  execution_allowed: boolean;
+}
+
+export interface DuPontDecomposition {
+  net_profit_margin_pct: number;
+  asset_turnover: number;
+  equity_multiplier: number;
+  computed_roe_pct: number;
+  driver_diagnosis: string;
+}
+
+export interface ReverseDCFImpliedExpectation {
+  market_cap: number;
+  normalized_fcf: number;
+  discount_rate: number;
+  terminal_growth: number;
+  implied_5y_cagr_pct: number | null;
+  safety_margin_assessment: string;
+}
+
+export interface AccountingRedFlag {
+  flag_id: string;
+  title_zh: string;
+  severity: string;
+  detail: string;
+}
+
+export interface TurnaroundAndTrapReport {
+  subject_id: string;
+  as_of: string;
+  classification: ValueTrapClassification;
+  turnaround_score: number;
+  trap_risk_score: number;
+  piotroski_f_score: number;
+  altman_z_score: number;
+  beneish_m_score: number;
+  engine_provider: string;
+  dupont: DuPontDecomposition | null;
+  reverse_dcf: ReverseDCFImpliedExpectation | null;
+  red_flags: AccountingRedFlag[];
+  turnaround_drivers: string[];
+  emitted_indicators: RawIndicatorEvidence[];
+}
+
+export interface OpportunityCostMatrixRow {
+  alternative_id: string;
+  alternative_name: string;
+  alternative_kind: string;
+  thesis_quality: string;
+  evidence_confidence: string;
+  zero_position_test: string;
+  decision_eligible: boolean;
+  candidate_advantages: string[];
+  alternative_advantages: string[];
+  shared_unknowns: string[];
+  governance_reasons: string[];
+}
+
+export interface KlineBarPoint {
+  time: string;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+export interface KlineMarkerPoint {
+  time: string;
+  position: string;
+  color: string;
+  shape: string;
+  text: string;
+}
+
+export interface BacktestSummaryViewModel {
+  strategy_name: string;
+  total_return_1x_pct: number;
+  total_return_2x_pct: number;
+  max_drawdown_1x_pct: number;
+  sharpe_1x: number | null;
+  win_rate_pct: number;
+  trade_count: number;
+  underwater_dates: string[];
+  underwater_drawdowns_pct: number[];
+  warnings: string[];
+}
+
+export interface ClaimAuditRow {
+  claim_id: string;
+  subject_ids: string[];
+  domain: string;
+  kind: ClaimKind | string;
+  verification_status: VerificationStatus | string;
+  confidence: ConfidenceLevel | string;
+  claim_text: string;
+  source_ids: string[];
+}
+
+export interface PortfolioCorrelationSummary {
+  as_of?: string;
+  symbols?: string[];
+  names?: Record<string, string>;
+  target_symbol?: string | null;
+  avg_correlation_to_portfolio?: number;
+  max_correlated_holding?: {
+    symbol: string;
+    name: string;
+    correlation: number;
+  };
+  target_min_vol_weight_pct?: number;
+  target_equal_weight_pct?: number;
+  weights?: Record<string, number>;
+  equal_weight_baseline?: Record<string, number>;
+  correlation_matrix?: Record<string, Record<string, number>>;
+  optimized_metrics?: Record<string, number | string | null>;
+  equal_weight_metrics?: Record<string, number | string | null>;
+  coverage?: Record<string, unknown>;
+  price_source?: string;
+  missing_or_short_symbols?: string[];
+  reason?: string;
+  library?: string;
+  library_version?: string | null;
+  status?: string;
+  research_only?: boolean;
+  execution_allowed?: boolean;
+}
+
+export interface DeepResearchCard {
+  subject_id: string;
+  subject_name: string;
+  asset_type: string;
+  as_of: string;
+  decision_packet: OrthogonalDecisionPacket;
+  turnaround_report: TurnaroundAndTrapReport | null;
+  asset_specific_metrics: Record<string, string>;
+  opportunity_cost_matrix: OpportunityCostMatrixRow[];
+  portfolio_correlation: PortfolioCorrelationSummary;
+  kline_bars: KlineBarPoint[];
+  kline_markers: KlineMarkerPoint[];
+  kline_as_of?: string | null;
+  kline_origin?: string;
+  backtest_summary: BacktestSummaryViewModel | null;
+  audit_claims: ClaimAuditRow[];
+  header_badge: ProvenanceBadge;
+  research_only: boolean;
+  execution_allowed: boolean;
+}
+
+export interface RadarStockEntry {
+  symbol: string;
+  name: string;
+  security_id: string;
+  primary_lens: string;
+  research_priority_score: number;
+  ranking_semantics: string;
+  state: string;
+  turnaround_classification: ValueTrapClassification;
+  turnaround_score: number;
+  trap_risk_score: number;
+  piotroski_f_score: number;
+  altman_z_score: number;
+  beneish_m_score: number;
+  red_flag_titles: string[];
+  summary: string;
+  badge: ProvenanceBadge;
+}
+
+export interface RadarETFEntry {
+  listed_security_id: string;
+  symbol: string;
+  name: string;
+  etf_subtype: ETFSubtype;
+  benchmark_or_index: string;
+  market_price: number;
+  reference_value: number;
+  premium_discount_pct: number | null;
+  tracking_error_or_excess: string;
+  liquidity_spread_bps: number;
+  fee_bps: number;
+  lens_score: number;
+  quality_status: string;
+  summary: string;
+  badge: ProvenanceBadge;
+}
+
+export interface RadarFundEntry {
+  fund_code: string;
+  fund_name: string;
+  category: string;
+  manager_tenure_years: number;
+  rolling_excess_1y_pct: number;
+  max_drawdown_recovery_days: number;
+  style_consistency: string;
+  fee_rate_pct: number;
+  subscription_state: string;
+  lens_score: number;
+  summary: string;
+  badge: ProvenanceBadge;
+}
+
+export interface RadarState {
+  as_of: string;
+  turnaround_candidates: RadarStockEntry[];
+  value_trap_warnings: RadarStockEntry[];
+  stock_discovery: RadarStockEntry[];
+  index_etfs: RadarETFEntry[];
+  active_etfs: RadarETFEntry[];
+  public_funds: RadarFundEntry[];
+  snapshot_store_count: number;
+  research_only: boolean;
+  execution_allowed: boolean;
+}
+
+export interface GapAuditRow {
+  requirement_id: string;
+  disposition: string;
+  resolved_claim_ids: string[];
+  rationale: string;
+}
+
+export interface SnapshotManifestRow {
+  dataset_id: string;
+  snapshot_id: string;
+  dataset_kind: string;
+  research_as_of: string;
+  row_count: number;
+  content_sha256: string;
+  verified: boolean;
+}
+
+export interface SourceHealthRow {
+  source_name: string;
+  category: string;
+  status: string;
+  crosscheck_mode: string;
+  detail: string;
+}
+
+export interface AuditState {
+  governance: GlobalGovernanceStatus;
+  ledger_id: string;
+  ledger_as_of: string;
+  raw_ledger_sha256: string;
+  manifest_ledger_match: boolean;
+  internal_seal_match: boolean;
+  model_rehash_match: boolean;
+  hash_note: string;
+  graph_id: string;
+  graph_node_count: number;
+  graph_relation_count: number;
+  graph_conflicts: string[];
+  graph_unknowns: string[];
+  status_counts: Record<string, number>;
+  kind_counts: Record<string, number>;
+  claims: ClaimAuditRow[];
+  gap_items: GapAuditRow[];
+  conflict_rows: Array<Record<string, string>>;
+  snapshots: SnapshotManifestRow[];
+  source_health: SourceHealthRow[];
+  research_only: boolean;
+  execution_allowed: boolean;
+}
+
+export interface QuantStatsMetrics {
+  sharpe: number;
+  sortino: number;
+  max_drawdown_pct: number;
+  calmar: number;
+  win_rate_pct: number;
+  tail_ratio: number;
+  var_95_pct: number;
+  cvar_95_pct: number;
+  cagr_pct: number;
+  volatility_pct: number;
+  total_return_pct: number;
+  benchmark_total_return_pct: number;
+  excess_return_pct: number;
+  benchmark_sharpe: number;
+  benchmark_max_drawdown_pct: number;
+}
+
+export interface QuantStatsSummary {
+  account_id: string;
+  account_name: string;
+  as_of: string;
+  total_asset_cny: number;
+  holding_count: number;
+  benchmark_label: string;
+  quantstats_version: string;
+  metrics: QuantStatsMetrics;
+  series: {
+    dates: string[];
+    strategy_cum_pct: number[];
+    benchmark_cum_pct: number[];
+    drawdown_pct: number[];
+  };
+  pypfopt_summary: PortfolioCorrelationSummary;
+  manifest: Record<string, unknown>;
+  html_path: string;
+  html_content?: string;
+  research_only: boolean;
+  execution_allowed: boolean;
+}
+
+export interface NativeKlineWindowResponse {
+  status: string;
+  engine: string;
+  payload_summary: {
+    symbol: string;
+    bars_count: number;
+    research_only: boolean;
+    execution_allowed: boolean;
+  };
+}
+
+export const CLUSTER_LABELS_ZH: Record<OrthogonalCluster, string> = {
+  VALUATION_AND_ODDS: '估值与赔率簇',
+  FUNDAMENTAL_AND_QUALITY: '基本面与质量簇',
+  PRICE_TREND_AND_FLOW: '价格趋势与资金簇',
+  INDUSTRY_AND_CATALYST: '行业景气与催化簇',
+  PORTFOLIO_AND_OPPORTUNITY_COST: '组合与机会成本簇',
+};
+
+export const ACTION_META: Record<
+  DecisionAction,
+  { labelZh: string; shortLabel: string; tone: 'rise' | 'fall' | 'accent' | 'warning' | 'muted' }
+> = {
+  BUY: { labelZh: '买入 (研究建议)', shortLabel: 'BUY', tone: 'rise' },
+  HOLD: { labelZh: '持有观察', shortLabel: 'HOLD', tone: 'accent' },
+  SELL: { labelZh: '卖出/减仓建议', shortLabel: 'SELL', tone: 'fall' },
+  WAIT: { labelZh: '等待观察', shortLabel: 'WAIT', tone: 'warning' },
+  INSUFFICIENT_EVIDENCE: {
+    labelZh: '证据不足 (Fail-Closed)',
+    shortLabel: 'BLOCKED',
+    tone: 'muted',
+  },
+};
+
+export function extractSubjectSixDigits(input: string): string {
+  const trimmed = input.trim();
+  const m = trimmed.match(/^(?:sh|sz|bj)?\.?(\d{6})(?:\.(?:sh|sz|bj))?$/i);
+  return m ? m[1] : trimmed.toUpperCase();
+}
+
+export function normalizeResearchSubjectId(input: string): string {
+  const trimmed = input.trim();
+  if (!trimmed) return '';
+  if (trimmed.toUpperCase() === '000999_TRAP') return '000999_TRAP';
+  if (trimmed.toUpperCase() === '511090_ACT') return '511090_ACT';
+  const prefixMatch = trimmed.match(/^(sh|sz|bj)\.?(\d{6})$/i);
+  if (prefixMatch) {
+    return `${prefixMatch[1].toLowerCase()}${prefixMatch[2]}`;
+  }
+  const suffixMatch = trimmed.match(/^(\d{6})\.(sh|sz|bj)$/i);
+  if (suffixMatch) {
+    return `${suffixMatch[2].toLowerCase()}${suffixMatch[1]}`;
+  }
+  if (/^\d{6}$/.test(trimmed)) {
+    return trimmed;
+  }
+  const parsed = parseStockCode(trimmed);
+  if (parsed.market && parsed.symbol) {
+    return `${parsed.market}${parsed.symbol}`;
+  }
+  return trimmed.toUpperCase();
+}
+
+export function toStockDetailRoute(subjectId: string): string | null {
+  const clean = normalizeResearchSubjectId(subjectId);
+  if (/^(sh|sz|bj)\d{6}$/i.test(clean)) {
+    return `/s/${clean.toLowerCase()}`;
+  }
+  if (!/^\d{6}$/.test(clean)) return null;
+  if (clean.startsWith('51') || clean.startsWith('56') || clean.startsWith('58')) {
+    return `/s/sh${clean}`;
+  }
+  if (clean.startsWith('159')) {
+    return `/s/sz${clean}`;
+  }
+  if (clean.startsWith('6') || clean.startsWith('0') || clean.startsWith('3')) {
+    return `/s/${normalizeStockCode(clean)}`;
+  }
+  if (clean.startsWith('4') || clean.startsWith('8') || clean.startsWith('92')) {
+    return `/s/bj${clean}`;
+  }
+  return `/s/${clean}`;
+}
+
+async function requestJson<T>(
+  url: string,
+  options?: { method?: 'GET' | 'POST'; signal?: AbortSignal; fallbackToCache?: boolean }
+): Promise<T> {
+  return apiRequestJson<T>(url, options);
+}
+
+export function fetchHealth(signal?: AbortSignal): Promise<HealthResponse> {
+  return requestJson<HealthResponse>('/api/health', { signal, fallbackToCache: false });
+}
+
+export function fetchWorkbench(signal?: AbortSignal): Promise<WorkbenchState> {
+  return requestJson<WorkbenchState>('/api/workbench', { signal });
+}
+
+export function fetchResearchCard(
+  subjectId: string,
+  signal?: AbortSignal,
+  assetType?: string
+): Promise<DeepResearchCard> {
+  const normalized = normalizeResearchSubjectId(subjectId);
+  const query = assetType ? `?asset_type=${encodeURIComponent(assetType)}` : '';
+  return requestJson<DeepResearchCard>(
+    `/api/research/${encodeURIComponent(normalized)}${query}`,
+    { signal }
+  );
+}
+
+export function fetchRadar(signal?: AbortSignal): Promise<RadarState> {
+  return requestJson<RadarState>('/api/radar', { signal });
+}
+
+export function fetchAudit(signal?: AbortSignal): Promise<AuditState> {
+  return requestJson<AuditState>('/api/audit', { signal });
+}
+
+export function fetchQuantStatsJson(
+  accountId = 'STK-ALIPAY-001',
+  signal?: AbortSignal
+): Promise<QuantStatsSummary> {
+  const query = new URLSearchParams({ account_id: accountId, format: 'json' });
+  return requestJson<QuantStatsSummary>(`/api/quantstats/tearsheet?${query.toString()}`, {
+    signal,
+  });
+}
+
+export function getQuantStatsHtmlUrl(accountId = 'STK-ALIPAY-001'): string {
+  const query = new URLSearchParams({ account_id: accountId, format: 'html' });
+  return `/api/quantstats/tearsheet?${query.toString()}`;
+}
+
+export function fetchQuantStatsHtml(
+  accountId = 'STK-ALIPAY-001',
+  signal?: AbortSignal
+): Promise<string> {
+  return apiRequestText(getQuantStatsHtmlUrl(accountId), { signal });
+}
+
+export function fetchMobilePairing(
+  mobilePort = 8502,
+  signal?: AbortSignal
+): Promise<MobilePairingInfo> {
+  const query = new URLSearchParams({ mobile_port: String(mobilePort) });
+  return requestJson<MobilePairingInfo>(`/api/mobile/pairing?${query.toString()}`, {
+    signal,
+    fallbackToCache: false,
+  });
+}
+
+export function fetchWebBundleManifest(signal?: AbortSignal): Promise<WebBundleManifest> {
+  return requestJson<WebBundleManifest>('/api/mobile/web-bundle/manifest', {
+    signal,
+    fallbackToCache: false,
+  });
+}
+
+export function fetchLatestAppRelease(signal?: AbortSignal): Promise<AppReleaseInfo> {
+  return requestJson<AppReleaseInfo>('/api/mobile/app-release/latest', {
+    signal,
+    fallbackToCache: false,
+  });
+}
+
+export interface PitSyncResponse {
+  status: string;
+  store_dir: string;
+  snapshot_id: string;
+  dataset_count: number;
+  total_rows: number;
+  synced_at: string;
+}
+
+export function triggerPitSync(): Promise<PitSyncResponse> {
+  return requestJson<PitSyncResponse>('/api/market/pit-sync', {
+    method: 'POST',
+    fallbackToCache: false,
+  });
+}
+
+export function openNativeKlineWindow(
+  subjectId: string,
+  launch = true
+): Promise<NativeKlineWindowResponse> {
+  const normalized = normalizeResearchSubjectId(subjectId);
+  const query = new URLSearchParams({ launch: String(launch) });
+  return requestJson<NativeKlineWindowResponse>(
+    `/api/lwc/native-window/${encodeURIComponent(normalized)}?${query.toString()}`,
+    { method: 'POST', fallbackToCache: false }
+  );
+}
+

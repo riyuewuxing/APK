@@ -1,0 +1,252 @@
+name: Build, UI E2E & Emulator Verification (arm64-v8a)
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout sanitized frontend shell
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "10.34.4"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "pnpm"
+          cache-dependency-path: "pnpm-lock.yaml"
+
+      - name: Install frontend dependencies and build
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+          npx cap sync android
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
+      - name: Configure preinstalled Android SDK & licenses
+        run: |
+          SDK_ROOT="${ANDROID_HOME:-/usr/local/lib/android/sdk}"
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
+          SDKMANAGER="$(find "$SDK_ROOT/cmdline-tools" -type f -name sdkmanager | head -n 1)"
+          yes | "$SDKMANAGER" --licenses > /dev/null 2>&1 || true
+          "$SDKMANAGER" "platforms;android-36" "build-tools;35.0.0"
+
+      - name: Decode persistent Android signing keystore & version props
+        env:
+          KEYSTORE_B64: ${{ secrets.TZ_SIGNING_KEYSTORE_B64 }}
+          KEY_ALIAS: ${{ secrets.TZ_SIGNING_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.TZ_SIGNING_KEY_PASSWORD }}
+          STORE_PASSWORD: ${{ secrets.TZ_SIGNING_STORE_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ] || [ -z "$STORE_PASSWORD" ]; then
+            echo "ERROR: Missing TZ_SIGNING_* secrets on APK repository" >&2
+            exit 1
+          fi
+          printf '%s' "$KEYSTORE_B64" | base64 -d > /tmp/tz-release.p12
+          test -s /tmp/tz-release.p12
+          VERSION_CODE=$((1000 + GITHUB_RUN_NUMBER))
+          VERSION_NAME="5.0.${VERSION_CODE}"
+          echo "TZ_KEYSTORE_FILE=/tmp/tz-release.p12" >> "$GITHUB_ENV"
+          echo "TZ_VERSION_CODE=${VERSION_CODE}" >> "$GITHUB_ENV"
+          echo "TZ_VERSION_NAME=${VERSION_NAME}" >> "$GITHUB_ENV"
+
+      - name: Setup Gradle cache
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-home-cache-cleanup: true
+
+      - name: Assemble signed arm64-v8a Debug APK
+        working-directory: android
+        env:
+          TZ_KEY_ALIAS: ${{ secrets.TZ_SIGNING_KEY_ALIAS }}
+          TZ_KEY_PASSWORD: ${{ secrets.TZ_SIGNING_KEY_PASSWORD }}
+          TZ_STORE_PASSWORD: ${{ secrets.TZ_SIGNING_STORE_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon \
+            -PTZ_VERSION_CODE="$TZ_VERSION_CODE" \
+            -PTZ_VERSION_NAME="$TZ_VERSION_NAME" \
+            -PTZ_KEYSTORE_FILE="$TZ_KEYSTORE_FILE" \
+            -PTZ_KEY_ALIAS="$TZ_KEY_ALIAS" \
+            -PTZ_KEY_PASSWORD="$TZ_KEY_PASSWORD" \
+            -PTZ_STORE_PASSWORD="$TZ_STORE_PASSWORD"
+
+      - name: Verify APK ABI & signing certificate and emit build meta
+        run: |
+          APK_PATH="android/app/build/outputs/apk/debug/app-debug.apk"
+          META_PATH="android/app/build/outputs/apk/debug/apk_build_meta.json"
+          test -f "$APK_PATH"
+          APKSIGNER="${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools/35.0.0/apksigner"
+          SIGNER_OUT="$("$APKSIGNER" verify --print-certs "$APK_PATH")"
+          echo "$SIGNER_OUT"
+          export SIGNER_OUT
+          python3 -c '
+          import json, os, re, sys, zipfile
+          with zipfile.ZipFile("android/app/build/outputs/apk/debug/app-debug.apk") as zf:
+              abis = sorted({p.split("/")[1] for p in zf.namelist() if p.startswith("lib/") and p.count("/") >= 2})
+              print("Detected ABIs:", abis)
+              if abis and abis != ["arm64-v8a"]:
+                  print("ERROR: forbidden ABIs detected:", abis, file=sys.stderr)
+                  sys.exit(1)
+          m = re.search(r"SHA-256 digest:\s*([0-9a-fA-F]{64})", os.environ["SIGNER_OUT"])
+          if not m:
+              print("ERROR: unable to parse APK signing SHA-256", file=sys.stderr)
+              sys.exit(1)
+          meta = {
+              "package_name": "com.riyuewuxing.touzizhuanjia",
+              "version_code": int(os.environ["TZ_VERSION_CODE"]),
+              "version_name": os.environ["TZ_VERSION_NAME"],
+              "signing_sha256": m.group(1).lower(),
+              "abis": abis,
+          }
+          with open("android/app/build/outputs/apk/debug/apk_build_meta.json", "w", encoding="utf-8") as fh:
+              json.dump(meta, fh, indent=2)
+          print("apk_build_meta.json:", json.dumps(meta))
+          '
+
+      - name: Upload APK & build metadata artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: touzizhuanjia-android-apk
+          path: |
+            android/app/build/outputs/apk/debug/app-debug.apk
+            android/app/build/outputs/apk/debug/apk_build_meta.json
+          if-no-files-found: error
+          retention-days: 14
+
+  ui-playwright-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout sanitized frontend shell
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "10.34.4"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "pnpm"
+          cache-dependency-path: "pnpm-lock.yaml"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build frontend dist
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Install Playwright Chromium in /tmp/pw
+        run: |
+          mkdir -p /tmp/pw
+          npm --prefix /tmp/pw install --no-save playwright
+          /tmp/pw/node_modules/.bin/playwright install --with-deps chromium
+
+      - name: Run mobile viewport full-route UI sweep
+        run: |
+          mkdir -p e2e_artifacts_ui
+          python3 e2e/mock_server.py --host 127.0.0.1 --port 8502 --dist-dir "$PWD/dist" > e2e_artifacts_ui/mock_server.log 2>&1 &
+          MOCK_PID=$!
+          trap 'kill $MOCK_PID 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:8502/api/health >/dev/null; then
+              break
+            fi
+            sleep 0.5
+          done
+          PW_ROOT=/tmp/pw node e2e/verify_playwright_mobile.mjs --base-url http://127.0.0.1:8502 --out-dir e2e_artifacts_ui
+
+      - name: Upload Playwright mobile screenshots & report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: touzizhuanjia-ui-verification
+          path: e2e_artifacts_ui/
+          if-no-files-found: warn
+          retention-days: 14
+
+  apk-emulator-e2e:
+    needs: [build-apk]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout sanitized frontend shell
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "10.34.4"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: "pnpm"
+          cache-dependency-path: "pnpm-lock.yaml"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build frontend dist
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+
+      - name: Download signed APK & build metadata
+        uses: actions/download-artifact@v4
+        with:
+          name: touzizhuanjia-android-apk
+          path: e2e_apk
+
+      - name: Enable KVM permissions
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm || true
+          ls -la /dev/kvm || true
+
+      - name: Run APK on Android Emulator & verify WebView + OTA + In-App Update
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          force-avd-creation: false
+          disable-animations: true
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
+          script: sed -i 's/\r$//' e2e/run_emulator_ci.sh && bash e2e/run_emulator_ci.sh
+
+      - name: Upload Emulator screenshots, report & logcat
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: touzizhuanjia-emulator-verification
+          path: e2e_artifacts_emulator/
+          if-no-files-found: warn
+          retention-days: 14

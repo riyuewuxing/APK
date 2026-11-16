@@ -1,0 +1,139 @@
+/* 投资专家公共徽章与溯源条样式（沿用 stock-dashboard CSS 变量，放大可读字号与留白） */
+
+.provenancePill {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  font-size: 13px;
+  color: var(--text-tertiary);
+  line-height: 1.55;
+}
+
+.provenanceSubtle {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--text-tertiary);
+  line-height: 1.55;
+}
+
+.provenanceSource {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.provenanceSep {
+  color: var(--border-strong);
+}
+
+.statusSupported {
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+.statusWarn {
+  color: var(--color-warning);
+  font-weight: 600;
+}
+
+.statusDanger {
+  color: var(--color-error);
+  font-weight: 600;
+}
+
+.actionPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13.5px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.tone-rise {
+  background: var(--color-rise-bg);
+  color: var(--color-rise);
+  border-color: rgba(239, 68, 68, 0.28);
+}
+
+.tone-fall {
+  background: var(--color-fall-bg);
+  color: var(--color-fall);
+  border-color: rgba(16, 185, 129, 0.28);
+}
+
+.tone-accent {
+  background: var(--color-accent-bg);
+  color: var(--color-accent);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.tone-warning {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.tone-muted {
+  background: var(--bg-elevated);
+  color: var(--text-tertiary);
+  border-color: var(--border-strong);
+}
+
+.lockBanner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.lockGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.lockChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  color: var(--text-primary);
+}
+
+.lockSafe {
+  background: var(--color-fall-bg);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: var(--color-success);
+  font-weight: 600;
+}
+

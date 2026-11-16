@@ -1,0 +1,148 @@
+.tabBar {
+  display: none;
+}
+
+.drawerBackdrop {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .tabBar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 120;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    align-items: center;
+    height: calc(var(--tabbar-height, 60px) + var(--safe-bottom, 0px));
+    padding-bottom: var(--safe-bottom, 0px);
+    background: color-mix(in srgb, var(--bg-secondary) 92%, transparent);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid var(--border-primary);
+  }
+
+  .tabItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 48px;
+    padding: 4px 2px;
+    border: none;
+    background: transparent;
+    color: var(--text-tertiary);
+    text-decoration: none;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    touch-action: manipulation;
+    transition: color var(--transition-fast);
+  }
+
+  .tabItemActive {
+    color: var(--color-accent);
+    font-weight: 600;
+  }
+
+  .tabIcon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+  }
+
+  .tabLabel {
+    line-height: 1.1;
+  }
+
+  .drawerBackdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 115;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    background: rgba(2, 6, 23, 0.55);
+    backdrop-filter: blur(2px);
+    padding-bottom: calc(var(--tabbar-height, 60px) + var(--safe-bottom, 0px));
+  }
+
+  .drawerSheet {
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-primary);
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.25);
+  }
+
+  .drawerHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .drawerTitle {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .drawerClose {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    min-height: 36px;
+    border: 1px solid var(--border-primary);
+    border-radius: 999px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+
+  .drawerGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .drawerItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 68px;
+    padding: 10px 8px;
+    border: 1px solid var(--border-primary);
+    border-radius: 12px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 12px;
+    text-align: center;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .drawerItemActive {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+    background: color-mix(in srgb, var(--color-accent) 12%, var(--bg-tertiary));
+  }
+
+  .drawerIcon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .drawerLabel {
+    line-height: 1.25;
+  }
+}

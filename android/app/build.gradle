@@ -1,0 +1,89 @@
+apply plugin: 'com.android.application'
+
+def tzVersionCodeProp = project.findProperty("TZ_VERSION_CODE")
+def tzVersionCode = tzVersionCodeProp != null ? tzVersionCodeProp.toString().toInteger() : 1
+def tzVersionNameProp = project.findProperty("TZ_VERSION_NAME")
+def tzVersionName = tzVersionNameProp != null ? tzVersionNameProp.toString() : "5.0.0"
+
+def tzKeystorePath = project.findProperty("TZ_KEYSTORE_FILE")?.toString()
+def tzStorePassword = project.findProperty("TZ_STORE_PASSWORD")?.toString()
+def tzKeyAlias = project.findProperty("TZ_KEY_ALIAS")?.toString()
+def tzKeyPassword = project.findProperty("TZ_KEY_PASSWORD")?.toString()
+def tzHasReleaseSigning = (
+    tzKeystorePath && tzStorePassword && tzKeyAlias && tzKeyPassword && file(tzKeystorePath).exists()
+)
+
+android {
+    namespace = "com.riyuewuxing.touzizhuanjia"
+    compileSdk = rootProject.ext.compileSdkVersion
+    signingConfigs {
+        if (tzHasReleaseSigning) {
+            tzRelease {
+                storeFile file(tzKeystorePath)
+                storePassword tzStorePassword
+                keyAlias tzKeyAlias
+                keyPassword tzKeyPassword
+            }
+        }
+    }
+    defaultConfig {
+        applicationId "com.riyuewuxing.touzizhuanjia"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode tzVersionCode
+        versionName tzVersionName
+        ndk {
+            // iQOO 13 骁龙 8 至尊版仅构建单一 64 位原生架构，减小包体并加速 CI 编译
+            abiFilters "arm64-v8a"
+        }
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    buildTypes {
+        debug {
+            if (tzHasReleaseSigning) {
+                signingConfig signingConfigs.tzRelease
+            }
+        }
+        release {
+            if (tzHasReleaseSigning) {
+                signingConfig signingConfigs.tzRelease
+            }
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}

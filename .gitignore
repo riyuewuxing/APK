@@ -1,0 +1,11 @@
+node_modules/
+.pnpm-store/
+dist/
+*.apk
+.gradle/
+android/app/build/
+android/capacitor-cordova-android-plugins/build/
+android/local.properties
+android/releases/*.apk
+.env
+.env.*
