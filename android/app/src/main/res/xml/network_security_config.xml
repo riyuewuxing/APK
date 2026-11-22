@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!--
+      iQOO 13 (OriginOS 7) 本地局域网与 Tailscale CGNAT 私网连接策略：
+      Android 的 <domain> 仅支持精确主机名或字面 IP，不支持 RFC1918 (10/8, 172.16/12, 192.168/16)
+      与 Tailscale CGNAT (100.64/10) 网段 CIDR 通配。因此通过 base-config 允许内网 HTTP 明文访问
+      本地桌面网关 (:8502)，公共行情域由前端严格约束仅走 HTTPS。
+    -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

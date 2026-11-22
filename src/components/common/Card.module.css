@@ -1,0 +1,126 @@
+/* 卡片样式 */
+
+.card {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-glass);
+  backdrop-filter: var(--surface-blur);
+  -webkit-backdrop-filter: var(--surface-blur);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-card);
+  box-shadow: var(--card-shadow);
+  transition:
+    border-color var(--transition-normal),
+    box-shadow var(--transition-normal);
+}
+
+.spotlight::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    180px circle at var(--spot-x, -200px) var(--spot-y, -200px),
+    color-mix(in srgb, var(--color-accent) 10%, transparent),
+    transparent 70%
+  );
+  transition: opacity 0.2s ease;
+  z-index: 0;
+}
+
+.spotlight:hover::after {
+  opacity: 1;
+}
+
+.spotlight:hover {
+  border-color: var(--border-strong);
+}
+
+:global([data-motion="off"]) .spotlight::after {
+  display: none;
+}
+
+.card:hover {
+  border-color: var(--border-strong);
+}
+
+.padding-none {
+  padding: 0;
+}
+
+.padding-sm {
+  padding: var(--spacing-sm);
+}
+
+.padding-md {
+  padding: var(--spacing-lg);
+}
+
+.padding-lg {
+  padding: var(--spacing-xl);
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm) var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+  position: relative;
+  z-index: 1;
+}
+
+.title {
+  flex: 1 1 160px;
+  min-width: 0;
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text-primary);
+}
+
+.extra {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-sm);
+  max-width: 100%;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.body {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+}
+
+/* 允许卡片填充父容器 */
+.card.padding-none {
+  display: flex;
+  flex-direction: column;
+}
+
+.card.padding-none .body {
+  flex: 1;
+  min-height: 0;
+}
+
+.enter {
+  animation: cardEnter 0.25s ease backwards;
+}
+
+@keyframes cardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

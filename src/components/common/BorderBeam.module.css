@@ -1,0 +1,49 @@
+.beam {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px;
+  pointer-events: none;
+  z-index: 2;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  overflow: hidden;
+}
+
+.beamSpinner {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--beam-size, 220%);
+  aspect-ratio: 1 / 1;
+  transform: translate(-50%, -50%) rotate(0deg);
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 285deg,
+    var(--beam-from, var(--color-accent)) 328deg,
+    var(--beam-to, var(--color-accent-2)) 352deg,
+    transparent 360deg
+  );
+  animation: borderBeamSpin var(--beam-duration, 6s) linear infinite;
+}
+
+@keyframes borderBeamSpin {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+:global([data-motion="subtle"]) .beam,
+:global([data-motion="off"]) .beam {
+  display: none;
+}

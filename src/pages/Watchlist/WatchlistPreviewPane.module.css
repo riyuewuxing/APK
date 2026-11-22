@@ -1,0 +1,302 @@
+/* 自选页右侧联动分时与 K 线预览面板 */
+
+.pane {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  position: sticky;
+  top: calc(var(--header-height) + 12px);
+  height: calc(100vh - var(--header-height) - 112px);
+  min-height: 580px;
+}
+
+.emptyState {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 360px;
+  padding: var(--spacing-xl);
+  background: var(--bg-glass);
+  backdrop-filter: var(--surface-blur);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-card);
+  color: var(--text-tertiary);
+  font-size: var(--font-size-sm);
+  text-align: center;
+}
+
+.headerCard {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--bg-glass);
+  backdrop-filter: var(--surface-blur);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-card);
+  box-shadow: var(--card-shadow);
+}
+
+.titleRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.symbolBlock {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
+.symbolName {
+  font-size: var(--font-size-md);
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 148px;
+}
+
+.symbolCode {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.priceBlock {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.priceValue {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+}
+
+.changeBadge {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.changeValue {
+  font-size: var(--font-size-xs);
+}
+
+.actionRow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.shortcutBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-primary);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 11px;
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.shortcutBtn:hover {
+  color: var(--text-primary);
+  border-color: var(--border-strong);
+}
+
+.shortcutAccent {
+  color: var(--color-accent);
+  background: var(--color-accent-bg);
+  border-color: var(--accent-border);
+}
+
+.shortcutAccent:hover {
+  color: #ffffff;
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.metaGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-secondary);
+}
+
+.metaGridOuter {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px 12px;
+}
+
+.metaItem,
+.metaItemWide {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  font-size: 11px;
+  min-width: 0;
+}
+
+.metaItemWide {
+  grid-column: span 2;
+}
+
+.metaLabel {
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.metaVal {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.metaVal:global(.text-rise) {
+  color: var(--color-rise);
+}
+
+.metaVal:global(.text-fall) {
+  color: var(--color-fall);
+}
+
+.chartCard {
+  flex: 1 1 0;
+  min-height: 210px;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px 6px;
+  background: var(--bg-glass);
+  backdrop-filter: var(--surface-blur);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-card);
+  box-shadow: var(--card-shadow);
+}
+
+.chartHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.chartTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.chartMeta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.maReadout {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.maItem {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 10.5px;
+  white-space: nowrap;
+}
+
+.periodPills {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.periodPill {
+  position: relative;
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  transition: color var(--transition-fast);
+}
+
+.periodPill:hover {
+  color: var(--text-primary);
+}
+
+.periodPillActive {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.periodPillBg {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--bg-elevated);
+  border: 1px solid color-mix(in srgb, var(--color-accent) 30%, transparent);
+  z-index: 0;
+}
+
+.periodPillLabel {
+  position: relative;
+  z-index: 1;
+}
+
+.klineNotice {
+  font-size: 10.5px;
+  color: var(--color-warning);
+  padding-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chartWrap {
+  flex: 1 1 0;
+  width: 100%;
+  min-height: 185px;
+  min-width: 0;
+}
+
+.chartEmpty {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}

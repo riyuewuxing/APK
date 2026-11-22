@@ -1,0 +1,382 @@
+.page {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+.topBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 14px;
+}
+
+.topDockLeft {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.topDockRight {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin-left: auto;
+}
+
+.statusMeta {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.statusBadge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--bg-glass);
+  backdrop-filter: var(--surface-blur);
+  border: 1px solid var(--border-primary);
+  font-family: var(--font-mono);
+}
+
+.viewTabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  background: var(--bg-glass);
+  backdrop-filter: var(--surface-blur);
+  border: 1px solid var(--border-primary);
+}
+
+.viewTabBtn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  z-index: 1;
+  transition: color var(--transition-fast);
+}
+
+.viewTabBtn:hover {
+  color: var(--text-primary);
+}
+
+.viewTabBtnActive {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.viewTabBg {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-sm);
+  background: var(--color-accent-bg);
+  border: 1px solid var(--accent-border);
+  z-index: -1;
+}
+
+.viewTabInner {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toolsRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.searchInput,
+.select {
+  height: 34px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.searchInput {
+  min-width: 190px;
+}
+
+.refreshBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.warnBanner {
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+  font-size: 13px;
+}
+
+.subControls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.legendInline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.dualGrid {
+  flex: 1 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.rankCard {
+  display: flex;
+  flex-direction: column;
+  min-height: clamp(480px, calc(100vh - 220px), 820px);
+}
+
+.tableWrap {
+  flex: 1 1 auto;
+  max-height: clamp(420px, calc(100vh - 290px), 740px);
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+.pctHeatCell {
+  position: relative;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.pctHeatCell::before {
+  content: '';
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  bottom: 4px;
+  width: var(--pct-fill, 0%);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--pct-color, var(--color-accent)) 13%, transparent);
+  pointer-events: none;
+}
+
+.pctHeatText {
+  position: relative;
+  z-index: 1;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+
+.table th {
+  text-align: left;
+  padding: 8px 10px;
+  color: var(--text-tertiary);
+  font-weight: 500;
+  border-bottom: 1px solid var(--border-primary);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border-secondary);
+  vertical-align: middle;
+}
+
+.rowClickable {
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.rowClickable:hover {
+  background: var(--bg-tertiary);
+}
+
+.nameMain {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.nameSub {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+}
+
+.watchBtn {
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-primary);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.watchBtnAdded {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.boardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.boardCard {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: border-color var(--transition-fast), transform var(--transition-fast);
+}
+
+.boardCard:hover,
+.boardCardActive {
+  border-color: var(--color-accent);
+  transform: translateY(-1px);
+}
+
+.boardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.boardName {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.boardMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+@media (max-width: 960px) {
+  .dualGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .rankCard {
+    min-height: 0;
+  }
+
+  .tableWrap {
+    max-height: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .hideOnMobile {
+    display: none;
+  }
+
+  .table {
+    font-size: 11.5px;
+  }
+
+  .table th,
+  .table td {
+    padding: 6px 5px;
+  }
+
+  .watchBtn {
+    padding: 2px 6px;
+    font-size: 11px;
+  }
+}
+
+.heatmapCard {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.outerHeatmapCanvas {
+  width: 100%;
+  flex: 1 0 auto;
+  height: clamp(500px, calc(100vh - 242px), 900px);
+}
+
+.heatmapLegend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.heatmapLegendBar {
+  width: 180px;
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--color-fall), var(--color-flat), var(--color-rise));
+}
+
+.heatmapLegendBar[data-mode='green-rise'] {
+  background: linear-gradient(90deg, var(--color-rise), var(--color-flat), var(--color-fall));
+}
+
+@media (max-width: 768px) {
+  .outerHeatmapCanvas {
+    height: 440px;
+  }
+}

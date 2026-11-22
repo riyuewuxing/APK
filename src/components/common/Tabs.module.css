@@ -1,0 +1,78 @@
+/* Tabs 样式 */
+
+.tabs {
+  display: flex;
+  gap: var(--spacing-xs);
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  background: var(--bg-primary);
+  padding: var(--spacing-xs);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.sm {
+  padding: 2px;
+}
+
+.sm .tab {
+  height: 26px;
+  padding: 0 var(--spacing-sm);
+  font-size: var(--font-size-xs);
+}
+
+.md .tab {
+  height: 32px;
+  padding: 0 var(--spacing-md);
+  font-size: var(--font-size-sm);
+}
+
+.tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  justify-content: center;
+  flex-shrink: 0;
+  white-space: nowrap;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  z-index: 1;
+  transition: color var(--transition-fast);
+}
+
+.tab:hover {
+  color: var(--text-primary);
+}
+
+.tab.active {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.indicator {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-secondary);
+  border: 1px solid var(--accent-border);
+  box-shadow: 0 1px 6px color-mix(in srgb, var(--color-accent) 12%, transparent);
+  border-radius: var(--radius-sm);
+  z-index: -1;
+}
+
+.icon,
+.labelText {
+  position: relative;
+  z-index: 1;
+}
+
+.icon {
+  display: flex;
+  align-items: center;
+}

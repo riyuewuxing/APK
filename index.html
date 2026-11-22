@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="theme-color" content="#050811" />
+    <meta name="description" content="投资专家 - 全球多市场投资研究终端与实时行情看板" />
+    <title>投资专家｜全球投资终端</title>
+    <script>
+      !(function(){try{var l=localStorage,d=document.documentElement,p=l.getItem('app.themePreset'),t=l.getItem('app.theme'),m=l.getItem('app.motionLevel'),dn=l.getItem('app.densityLevel'),rm=l.getItem('app.radiusMode'),tx=l.getItem('app.textureEnabled'),s=l.getItem('app.settings'),c=l.getItem('ui.sidebarCollapsed'),dk={'obsidian-pro':'dark','emerald-desk':'dark','amber-terminal':'dark','daylight-swiss':'light','crimson-silk':'light'},tc={'obsidian-pro':'#050811','emerald-desk':'#040d0a','amber-terminal':'#080705','daylight-swiss':'#eef2f7','crimson-silk':'#f5f1e8'};if(!p||!dk[p]){p=t==='light'?'daylight-swiss':(t==='dark'?'obsidian-pro':(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches?'daylight-swiss':'obsidian-pro'));}d.setAttribute('data-theme-preset',p);d.setAttribute('data-theme',dk[p]||'dark');d.setAttribute('data-motion',(m==='subtle'||m==='off')?m:'full');d.setAttribute('data-density',(dn==='compact'||dn==='spacious')?dn:'comfortable');d.setAttribute('data-radius-mode',(rm==='sharp'||rm==='rounded')?rm:'preset');d.setAttribute('data-texture',tx==='false'?'false':'true');var mt=document.querySelector('meta[name="theme-color"]');if(mt&&tc[p])mt.setAttribute('content',tc[p]);if(s){var parsed=JSON.parse(s);if(parsed&&parsed.colorMode)d.setAttribute('data-color-mode',parsed.colorMode);}if(c==='true')d.setAttribute('data-sidebar-collapsed','true');}catch(e){}})();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,391 @@
+/* 底部可折叠「研究机会与持仓 Dock」 */
+
+.dock {
+  background: var(--bg-glass);
+  backdrop-filter: var(--surface-blur);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+.headerBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 34px;
+  padding: 4px 10px;
+  background: var(--bg-tertiary);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.headerLeft::-webkit-scrollbar {
+  display: none;
+}
+
+.toggleBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.toggleBtn:hover {
+  color: var(--color-accent);
+}
+
+.dockTitle {
+  white-space: nowrap;
+}
+
+.tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.tabBtn {
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  transition: all var(--transition-fast);
+}
+
+.tabBtn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.tabBtnActive {
+  color: var(--color-accent);
+  background: var(--color-accent-bg);
+  font-weight: 600;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.complianceTag {
+  font-size: 10.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.refreshBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+}
+
+.refreshBtn:hover {
+  color: var(--text-primary);
+  background: var(--bg-elevated);
+}
+
+.body {
+  height: 188px;
+  overflow-y: auto;
+  border-top: 1px solid var(--border-primary);
+}
+
+.statusRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 100%;
+  min-height: 80px;
+  padding: 12px;
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+
+.retryBtn {
+  padding: 3px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  color: var(--text-primary);
+  font-size: 11.5px;
+}
+
+.retryBtn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+.subBanner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.bannerScheme {
+  color: var(--text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  transition: background var(--transition-fast);
+}
+
+.row:hover {
+  background: var(--bg-tertiary);
+}
+
+.codeCell {
+  font-family: var(--font-mono);
+  color: var(--text-tertiary);
+  width: 54px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.nameCell {
+  color: var(--text-primary);
+  font-weight: 500;
+  width: 84px;
+  flex-shrink: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pill {
+  padding: 1px 6px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.tone_rise {
+  color: var(--color-rise);
+  background: var(--color-rise-bg);
+}
+
+.tone_fall {
+  color: var(--color-fall);
+  background: var(--color-fall-bg);
+}
+
+.tone_accent {
+  color: var(--color-accent);
+  background: var(--color-accent-bg);
+}
+
+.tone_warning {
+  color: var(--color-warning);
+  background: var(--color-warning-bg);
+}
+
+.tone_muted {
+  color: var(--text-tertiary);
+  background: var(--bg-tertiary);
+}
+
+.monoCell {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.summaryCell {
+  flex: 1;
+  min-width: 0;
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.rowBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-primary);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.rowBtn:hover:not(:disabled) {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.rowBtnAdded {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+@media (max-width: 1280px) {
+  .complianceTag {
+    display: none;
+  }
+}
+
+.globalPane {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.crossBorderBanner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-secondary);
+  font-size: var(--font-size-xs);
+}
+
+.crossBorderTitle {
+  font-weight: 700;
+  color: var(--color-accent);
+  white-space: nowrap;
+}
+
+.crossBorderMetrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
+.crossBorderHint {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.globalGroupsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.globalGroupCard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-secondary);
+  background: var(--bg-primary);
+  min-width: 0;
+}
+
+.globalGroupTitle {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  padding-bottom: 3px;
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.globalItemRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.globalItemName {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-primary);
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.globalSession {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.globalItemNums {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.globalPrice {
+  color: var(--text-secondary);
+}
+
+.globalPct {
+  font-weight: 600;
+  min-width: 50px;
+  text-align: right;
+}
+
+.globalMuted {
+  color: var(--text-muted);
+}

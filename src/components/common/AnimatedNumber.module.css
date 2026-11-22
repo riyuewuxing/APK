@@ -1,0 +1,39 @@
+.numRoot {
+  display: inline-block;
+  border-radius: 3px;
+}
+
+.flashRise {
+  animation: numFlashRise 0.55s ease-out;
+}
+
+.flashFall {
+  animation: numFlashFall 0.55s ease-out;
+}
+
+@keyframes numFlashRise {
+  0% {
+    background-color: var(--color-rise-flash);
+    box-shadow: 0 0 8px var(--color-rise-flash);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: none;
+  }
+}
+
+@keyframes numFlashFall {
+  0% {
+    background-color: var(--color-fall-flash);
+    box-shadow: 0 0 8px var(--color-fall-flash);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: none;
+  }
+}
+
+:global([data-motion="off"]) .flashRise,
+:global([data-motion="off"]) .flashFall {
+  animation: none;
+}

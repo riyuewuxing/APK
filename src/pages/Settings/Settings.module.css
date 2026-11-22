@@ -1,0 +1,594 @@
+/* 设置页面样式 */
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+  width: 100%;
+  max-width: 1320px;
+  margin: 0 auto;
+}
+
+.prefGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-lg);
+  align-items: start;
+}
+
+.prefFullSpan {
+  grid-column: 1 / -1;
+}
+
+.presetGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+.presetCard {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-primary);
+  background: var(--bg-tertiary);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--transition-fast),
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.presetCard:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-2px);
+}
+
+.presetCardActive {
+  border-color: var(--color-accent);
+  background: var(--color-accent-bg);
+  box-shadow: var(--accent-glow);
+}
+
+.presetSwatchBar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid;
+}
+
+.swatchDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.polarityPill {
+  margin-left: auto;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: rgba(15, 23, 42, 0.45);
+  color: #f8fafc;
+}
+
+.presetCheck {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  color: var(--bg-primary);
+}
+
+.presetCardTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.presetCardScene {
+  font-size: 11.5px;
+  color: var(--text-tertiary);
+}
+
+@media (max-width: 1024px) {
+  .prefGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.title {
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.headerRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+}
+
+.segmentTabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 4px;
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+}
+
+.segmentTabBtn {
+  position: relative;
+  overflow: hidden;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.segmentTabBtn:hover {
+  color: var(--text-primary);
+}
+
+.segmentTabBtnActive {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.segmentTabPill {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--color-accent);
+  z-index: 0;
+}
+
+.segmentTabLabel {
+  position: relative;
+  z-index: 1;
+}
+
+/* Section */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.sectionIcon {
+  color: var(--color-accent);
+}
+
+.sectionHeader h3 {
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.sectionContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+/* 设置项 */
+.settingItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-sm) 0;
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.settingItem:last-child {
+  border-bottom: none;
+}
+
+.settingInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.settingLabel {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+.settingDesc {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+}
+
+/* Select */
+.select {
+  min-width: 120px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.select:hover {
+  border-color: var(--border-focus);
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--border-focus);
+}
+
+.textInput,
+.numberInput {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+}
+
+.textInput {
+  min-width: 180px;
+}
+
+.numberInput {
+  width: 84px;
+  font-family: var(--font-mono);
+}
+
+.textInput:focus,
+.numberInput:focus {
+  outline: none;
+  border-color: var(--border-focus);
+}
+
+.inlineInputs {
+  display: flex;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+/* 颜色模式 */
+.colorModeOptions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.colorModeBtn {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.colorModeBtn:hover {
+  border-color: var(--border-focus);
+}
+
+.colorModeBtn.active {
+  border-color: var(--color-accent);
+  background: var(--color-accent-bg);
+  color: var(--text-primary);
+}
+
+.riseRed {
+  color: #ef4444;
+  font-weight: 500;
+}
+
+.fallGreen {
+  color: #22c55e;
+  font-weight: 500;
+}
+
+.riseGreen {
+  color: #22c55e;
+  font-weight: 500;
+}
+
+.fallRed {
+  color: #ef4444;
+  font-weight: 500;
+}
+
+/* 参数值 */
+.paramValue {
+  font-size: var(--font-size-sm);
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+}
+
+/* 关于 */
+.aboutInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.aboutInfo p {
+  font-size: var(--font-size-sm);
+  color: var(--text-primary);
+}
+
+.aboutDesc {
+  color: var(--text-secondary) !important;
+}
+
+.aboutNote {
+  margin-top: var(--spacing-sm);
+}
+
+.noteList {
+  margin-top: var(--spacing-xs);
+  padding-left: var(--spacing-lg);
+  list-style: disc;
+}
+
+.noteList li {
+  font-size: var(--font-size-xs);
+  color: var(--text-tertiary);
+  margin-bottom: 2px;
+}
+
+/* 移动端连接与热更新 */
+.mobileStatusRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.mobileStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border: 1px solid var(--border-primary);
+}
+
+.mobileStatusOk {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.mobileStatusWarn {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.14);
+  border-color: rgba(245, 158, 11, 0.4);
+}
+
+.mobileStatusMuted {
+  color: var(--text-secondary);
+  background: var(--bg-tertiary);
+}
+
+.pairingBox,
+.otaBox {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-secondary);
+  background: var(--bg-tertiary);
+}
+
+.pairingMetaGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--spacing-sm);
+  font-size: 12px;
+}
+
+.pairingMetaGrid>div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pairingMetaGrid code {
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  word-break: break-all;
+}
+
+.pairingMetaLabel {
+  color: var(--text-tertiary);
+}
+
+.pairingCodeRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.mobileFormGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-md);
+}
+
+.mobileFieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mobileFullInput,
+.mobileTextarea {
+  width: 100%;
+  flex: 1;
+  min-width: 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-md);
+}
+
+.mobileFullInput:focus,
+.mobileTextarea:focus {
+  outline: none;
+  border-color: var(--border-focus);
+}
+
+.mobileActionRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.updateProgressWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.updateProgressTrack {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--bg-secondary);
+  overflow: hidden;
+}
+
+.updateProgressFill {
+  height: 100%;
+  background: var(--color-accent);
+  transition: width 0.15s ease;
+}
+
+.signingWarnText {
+  font-size: 12px;
+  color: #f59e0b;
+  line-height: 1.45;
+}
+
+.briefingPre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-primary);
+}
+
+.schedulerRunList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.schedulerRunRow {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-secondary);
+  background: var(--bg-secondary);
+}
+
+.schedulerRunTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.schedulerCheckRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.schedulerCheckLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .settingItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+  }
+
+  .mobileFormGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .pairingCodeRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .colorModeOptions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .colorModeBtn {
+    justify-content: center;
+  }
+
+  .textInput,
+  .inlineInputs {
+    width: 100%;
+  }
+}
