@@ -1,0 +1,71 @@
+name: Public frontend regression
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'tsconfig*.json'
+      - 'vite.config.ts'
+      - 'index.html'
+      - 'stage5_public_build_scope.json'
+      - '.github/workflows/public-frontend-regression.yml'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-frontend-regression-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  public-frontend:
+    if: ${{ github.event.repository.visibility == 'public' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Verify public projection manifest
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, re, subprocess
+          scope = json.loads(pathlib.Path("stage5_public_build_scope.json").read_text())
+          assert scope["schema"] == "stage5_reviewed_public_projection_v1"
+          assert re.fullmatch(r"[0-9a-f]{40}", scope["private_source_commit"])
+          seen = set()
+          for row in scope["files"]:
+              path = pathlib.Path(row["path"])
+              assert not path.is_absolute() and ".." not in path.parts
+              assert str(path) not in seen and path.is_file() and not path.is_symlink()
+              assert re.fullmatch(r"[0-9a-f]{40}", row["public_blob_sha"])
+              actual = subprocess.check_output(["git", "hash-object", "--", str(path)], text=True).strip()
+              assert actual == row["public_blob_sha"], f"scope mismatch: {path}"
+              seen.add(str(path))
+          assert seen
+          print(f"Verified {len(seen)} reviewed public blobs; no claim of full private parity.")
+          PY
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '10.34.4'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run entire public Vitest suite
+        run: pnpm test
+      - name: Typecheck and build public shell
+        run: pnpm build
+      - name: Record scope
+        run: |
+          printf 'Public frontend regression passed for %s.\n\nOnly the public shell is tested; this is not the private authority or runtime gate. No artifact uploaded.\n' "$GITHUB_SHA" >> "$GITHUB_STEP_SUMMARY"
