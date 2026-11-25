@@ -381,6 +381,18 @@ async function main() {
   await page.locator('[data-testid="debate-perspective-OPPORTUNITY_COST"]').waitFor({ state: 'visible', timeout: 8000 });
   await visit('/expert#debate', '01c_expert_debate.png');
 
+  await page.goto(`${args.baseUrl}/expert?symbol=600900&tab=backtest`, { waitUntil: 'domcontentloaded' });
+  const cashResearch = page.getByTestId('cash-execution-research');
+  await cashResearch.getByText('[DEMO] 合成UI测试，非真实成交').waitFor({state: 'visible', timeout: 8000});
+  await cashResearch.getByText('N/A / 0', {exact: true}).waitFor({state: 'visible', timeout: 8000});
+  await visit('/expert#cash-execution-scenario', '01d_expert_backtest.png');
+  await page.goto(`${args.baseUrl}/expert?symbol=300476&tab=backtest`, { waitUntil: 'domcontentloaded' });
+  await cashResearch.getByText('[DEMO] 缺少完整历史交易状态').waitFor({state: 'visible', timeout: 8000});
+  if (await cashResearch.getByText('模拟成交 / 阻断订单', {exact: true}).count() !== 0) {
+    throw new Error('blocked cash research displayed simulated fills');
+  }
+  await visit('/expert#cash-execution-blocked', '01e_expert_backtest_blocked.png');
+
   await clickBottomTab(page, '市场');
   await page.locator('[data-testid="markets-selector-kr"]').click();
   await page.locator('[data-testid="markets-view-rankings"]').click();

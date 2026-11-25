@@ -413,6 +413,32 @@ export interface PortfolioCorrelationSummary {
   execution_allowed?: boolean;
 }
 
+export interface CashExecutionResearch {
+  status: 'UNAVAILABLE' | 'BLOCKED' | 'SCENARIO_ONLY' | 'NOT_APPLICABLE';
+  reason: string;
+  execution_gate?: string | null;
+  data_cutoff?: string | null;
+  sample_start?: string | null;
+  sample_end?: string | null;
+  price_provider?: string | null;
+  status_provider?: string | null;
+  input_sha256?: string | null;
+  observation_count: number;
+  initial_cash_cny?: number | null;
+  total_return_pct?: number | null;
+  max_drawdown_pct?: number | null;
+  filled_order_count?: number | null;
+  blocked_order_count?: number | null;
+  closed_trade_count?: number | null;
+  closed_trade_win_rate_pct?: number | null;
+  closed_trade_net_pnl_cny?: number | null;
+  open_position_count?: number | null;
+  warnings: string[];
+  historical_vintage_verified: false;
+  research_only: true;
+  execution_allowed: false;
+}
+
 export interface DeepResearchCard {
   subject_id: string;
   subject_name: string;
@@ -430,6 +456,7 @@ export interface DeepResearchCard {
   kline_as_of?: string | null;
   kline_origin?: string;
   backtest_summary: BacktestSummaryViewModel | null;
+  cash_execution_summary?: CashExecutionResearch | null;
   audit_claims: ClaimAuditRow[];
   header_badge: ProvenanceBadge;
   research_only: boolean;

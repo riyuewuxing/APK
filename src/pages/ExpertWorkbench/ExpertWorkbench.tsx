@@ -722,6 +722,35 @@ export function ExpertWorkbench() {
 
                 {detailTab === 'backtest' && (
                   <div>
+                    {researchCard.asset_type === 'STOCK' && (
+                      <div className={styles.evidenceCard} data-testid="cash-execution-research">
+                        <div className={styles.subSectionTitle}>未复权现金撮合研究 · 非真实成交</div>
+                        <div>{researchCard.cash_execution_summary?.reason ?? '当前后端未提供独立现金撮合研究'}</div>
+                        {researchCard.cash_execution_summary?.sample_end && (
+                          <div className={styles.kpiSub}>
+                            {researchCard.cash_execution_summary.sample_start} 至 {researchCard.cash_execution_summary.sample_end} ·
+                            {researchCard.cash_execution_summary.observation_count} 个观察 · 截止 {researchCard.cash_execution_summary.data_cutoff}
+                          </div>
+                        )}
+                        {researchCard.cash_execution_summary?.status === 'SCENARIO_ONLY' && (
+                          <div className={styles.kpiGrid2}>
+                            <div className={styles.kpiTile}><span className={styles.kpiLabel}>情景收益 / 最大回撤</span><span className={styles.kpiVal}>
+                              {researchCard.cash_execution_summary.total_return_pct == null ? 'N/A' : researchCard.cash_execution_summary.total_return_pct.toFixed(2) + '%'} / {researchCard.cash_execution_summary.max_drawdown_pct == null ? 'N/A' : researchCard.cash_execution_summary.max_drawdown_pct.toFixed(2) + '%'}
+                            </span></div>
+                            <div className={styles.kpiTile}><span className={styles.kpiLabel}>净胜率 / 已平仓回合</span><span className={styles.kpiVal}>
+                              {researchCard.cash_execution_summary.closed_trade_win_rate_pct == null ? 'N/A' : researchCard.cash_execution_summary.closed_trade_win_rate_pct.toFixed(1) + '%'} / {researchCard.cash_execution_summary.closed_trade_count ?? 'N/A'}
+                            </span></div>
+                            <div className={styles.kpiTile}><span className={styles.kpiLabel}>模拟成交 / 阻断订单</span><span className={styles.kpiVal}>
+                              {researchCard.cash_execution_summary.filled_order_count ?? 'N/A'} / {researchCard.cash_execution_summary.blocked_order_count ?? 'N/A'}
+                            </span></div>
+                            <div className={styles.kpiTile}><span className={styles.kpiLabel}>已平仓净盈亏 / 未平仓回合</span><span className={styles.kpiVal}>
+                              {researchCard.cash_execution_summary.closed_trade_net_pnl_cny == null ? 'N/A' : formatNumber(researchCard.cash_execution_summary.closed_trade_net_pnl_cny)} / {researchCard.cash_execution_summary.open_position_count ?? 'N/A'}
+                            </span></div>
+                          </div>
+                        )}
+                        <div className={styles.kpiSub}>历史版本未经验证，分红送转与盘口排队未建模；不作为正式决策证据。</div>
+                      </div>
+                    )}
                     {!researchCard.backtest_summary ? (
                       <Empty description="当前标的未运行回测序列" />
                     ) : (

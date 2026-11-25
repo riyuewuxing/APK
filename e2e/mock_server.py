@@ -372,6 +372,24 @@ def _research_payload(subject_id: str) -> dict[str, Any]:
         "kline_markers": [
             {"time": bars[-3]["time"], "position": "belowBar", "color": "#22c55e", "shape": "arrowUp", "text": "DEMO"}
         ],
+        "cash_execution_summary": ({
+            "status": "SCENARIO_ONLY" if clean == "600900" else "BLOCKED",
+            "reason": "[DEMO] 合成UI测试，非真实成交" if clean == "600900" else "[DEMO] 缺少完整历史交易状态",
+            "execution_gate": "PASS" if clean == "600900" else "BLOCK",
+            "observation_count": 100,
+            "sample_start": "2026-06-01",
+            "sample_end": "2026-11-13",
+            "data_cutoff": "2026-11-13",
+            "warnings": ["SYNTHETIC_UI_FIXTURE_ONLY"],
+            "historical_vintage_verified": False,
+            "research_only": True,
+            "execution_allowed": False,
+            **({"initial_cash_cny": 1000000, "total_return_pct": 1.2,
+                "max_drawdown_pct": -2.0, "filled_order_count": 1,
+                "blocked_order_count": 0, "closed_trade_count": 0,
+                "closed_trade_win_rate_pct": None, "closed_trade_net_pnl_cny": 0.0,
+                "open_position_count": 1} if clean == "600900" else {}),
+        } if asset_type == "STOCK" else None),
         "backtest_summary": {
             "strategy_name": "模拟 E2E 研究标尺（非实际撮合）",
             "total_return_1x_pct": 14.8,

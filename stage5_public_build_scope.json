@@ -1,7 +1,7 @@
 {
   "schema": "stage5_reviewed_public_projection_v1",
-  "private_source_commit": "87c27219b6660c286dea2b9e8f6f2d666799115c",
-  "public_base_commit": "06c085932b882abc7539d4ace8a49b628767c9f3",
+  "private_source_commit": "353ca5808365d240e3f7975ee6d925b4d8bd82cf",
+  "public_base_commit": "fd0a6a1436f794adfe4e66593f474c97dfa82bd4",
   "scope": "Cumulative reviewed frontend projection, adapted for read-only public shell; synthetic UI fixture only. No private backend or account records.",
   "files": [
     {
@@ -10,11 +10,11 @@
     },
     {
       "path": "e2e/mock_server.py",
-      "public_blob_sha": "8b06e4b80139c6cf2361a6d2c984f87823cd161e"
+      "public_blob_sha": "517049b153cc42584e5d5c19157a176d3887bfe3"
     },
     {
       "path": "e2e/verify_playwright_mobile.mjs",
-      "public_blob_sha": "c0b5909e712e328827b89d3d059f9e90c16129cc"
+      "public_blob_sha": "51d860bd7101984d85eb058f4eaf64f3731a0724"
     },
     {
       "path": "src/components/expert/StockExpertEvidenceCard.tsx",
@@ -26,7 +26,7 @@
     },
     {
       "path": "src/pages/ExpertWorkbench/ExpertWorkbench.tsx",
-      "public_blob_sha": "239f58c8db2544d28584659188c323704832ec21"
+      "public_blob_sha": "410ecdf7141cd5708f32b888d71a85355c2e2e92"
     },
     {
       "path": "src/pages/Watchlist/WatchlistResearchDock.tsx",
@@ -46,7 +46,7 @@
     },
     {
       "path": "src/services/expertApi.ts",
-      "public_blob_sha": "0cfdbd33ed21e3cbacd157751ea7aea2a787c578"
+      "public_blob_sha": "2e761d0cb35c30635bd7c114994b624e30d3b6b3"
     },
     {
       "path": "src/services/researchAdvApi.ts",
