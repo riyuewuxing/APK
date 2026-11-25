@@ -43,6 +43,7 @@ export interface TimelinePoint {
   time: string;
   price: number;
   avgPrice: number;
+  avgPriceBasis?: string;
   /** 当日累计成交额（元），后端尾盘额占比计算用；旧数据可能缺省 */
   amount?: number;
 }
@@ -88,11 +89,15 @@ export interface EndOfDayStock {
   open: number;
   prevClose: number;
   timeline?: TimelinePoint[];
+  timelineTradeDate?: string;
+  timelineAverageBasis?: string;
   timelineAboveAvgRatio?: number;
   /** M1 尾盘 2.0：后端结构校验后回填 */
   tail30mReturnPct?: number | null;
   tail30mAmountSharePct?: number | null;
   chipProfitRatioApprox?: number | null;
+  chipEstimateBasis?: string;
+  chipKnownCoveragePct?: number | null;
   mainNetInflow10k?: number | null;
   vettingStatus?: string;
   vettingFlags?: string[];
@@ -193,23 +198,49 @@ async function mapWithConcurrency<T, R>(
   return results;
 }
 
-export function calculateTimelineStrength(
-  timeline: TodayTimelineResponse
-): { ratio: number; points: TimelinePoint[] } {
-  if (!timeline.data || timeline.data.length === 0) {
-    return { ratio: 0, points: [] };
-  }
+function timelineMinute(time: string): string | null {
+  if (typeof time !== 'string') return null;
+  const match = /^(?:\d{4}-\d{2}-\d{2}[ T])?([01]\d|2[0-3]):([0-5]\d)$/.exec(time);
+  if (!match) return null;
+  const minute = match[1] + ':' + match[2];
+  return minute >= '09:25' && minute <= '15:00' ? minute : null;
+}
 
-  const points: TimelinePoint[] = timeline.data.map((item) => ({
+function positive(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0;
+}
+
+function validAmount(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0;
+}
+
+function orderedTimeline(points: TimelinePoint[], cutoff = '15:00'): TimelinePoint[] | null {
+  const byMinute = new Map<string, TimelinePoint>();
+  for (const point of points) {
+    const minute = timelineMinute(point.time);
+    if (!minute || minute > cutoff) continue;
+    const previous = byMinute.get(minute);
+    if (previous && ( (positive(previous.price) ? previous.price : null) !== (positive(point.price) ? point.price : null)
+      || (positive(previous.avgPrice) ? previous.avgPrice : null) !== (positive(point.avgPrice) ? point.avgPrice : null)
+      || (validAmount(previous.amount) ? previous.amount : null) !== (validAmount(point.amount) ? point.amount : null))) return null;
+    byMinute.set(minute, { ...point, time: minute });
+  }
+  return [...byMinute.values()].sort((a, b) => a.time.localeCompare(b.time));
+}
+
+export function calculateTimelineStrength(
+  timeline: TodayTimelineResponse, cutoff = '15:00'
+): { ratio: number | null; points: TimelinePoint[] } {
+  const points = orderedTimeline((timeline.data ?? []).map((item) => ({
     time: item.time,
     price: item.price,
     avgPrice: item.avgPrice,
     amount: item.amount,
-  }));
-
-  const aboveAvgCount = points.filter((point) => point.price >= point.avgPrice).length;
+    avgPriceBasis: (item as {avgPriceBasis?: string}).avgPriceBasis,
+  })), cutoff) ?? [];
+  const pairs = points.filter((p) => positive(p.price) && positive(p.avgPrice));
   return {
-    ratio: (aboveAvgCount / points.length) * 100,
+    ratio: pairs.length ? pairs.filter((p) => p.price >= p.avgPrice).length / pairs.length * 100 : null,
     points,
   };
 }
@@ -227,34 +258,27 @@ export interface TimelineStructure {
  * - intradayDrawbackPct：(日内最高 - 最新)/日内最高
  * 数据缺失一律 null（fail-closed，不合成）。
  */
-export function computeTimelineStructure(points: TimelinePoint[]): TimelineStructure {
-  if (!points.length) {
+export function computeTimelineStructure(points: TimelinePoint[], cutoff = '15:00'): TimelineStructure {
+  const ordered = orderedTimeline(points, cutoff);
+  if (!ordered?.length) {
     return { tail30mReturnPct: null, tail30mAmountSharePct: null, intradayDrawbackPct: null };
   }
-  const ordered = [...points].sort((a, b) => a.time.localeCompare(b.time));
-  const hhmm = (t: string) => t.slice(-5);
-
-  const tailPrices = ordered.filter((p) => hhmm(p.time) >= '14:30').map((p) => p.price);
-  const lastPrice = ordered[ordered.length - 1].price;
-  const tail30mReturnPct = tailPrices.length && tailPrices[0] > 0
-    ? ((lastPrice - tailPrices[0]) / tailPrices[0]) * 100
+  const prices = ordered.filter((p) => positive(p.price));
+  const tailPrices = prices.filter((p) => p.time >= '14:30');
+  const last = prices[prices.length - 1];
+  const tail30mReturnPct = tailPrices.length >= 2
+    ? ((tailPrices[tailPrices.length - 1].price - tailPrices[0].price) / tailPrices[0].price) * 100
     : null;
-
-  const highPrice = ordered.reduce((max, p) => Math.max(max, p.price), -Infinity);
-  const intradayDrawbackPct = Number.isFinite(highPrice) && highPrice > 0
-    ? ((highPrice - lastPrice) / highPrice) * 100
-    : null;
-
-  const cumulative = ordered.filter((p) => typeof p.amount === 'number' && Number.isFinite(p.amount));
+  const highPrice = prices.reduce((max, p) => Math.max(max, p.price), -Infinity);
+  const intradayDrawbackPct = last && highPrice > 0 ? (highPrice - last.price) / highPrice * 100 : null;
+  const cumulative = ordered.filter((p) => validAmount(p.amount));
+  const final = cumulative[cumulative.length - 1];
+  const preTail = cumulative.filter((p) => p.time < '14:30');
+  const monotonic = cumulative.every((p, index) => index === 0 || p.amount! >= cumulative[index - 1].amount!);
   let tail30mAmountSharePct: number | null = null;
-  if (cumulative.length) {
-    const finalCum = cumulative[cumulative.length - 1].amount as number;
-    const preTail = cumulative.filter((p) => hhmm(p.time) < '14:30');
-    if (finalCum > 0 && preTail.length) {
-      const baseline = preTail[preTail.length - 1].amount as number;
-      const increment = finalCum - baseline;
-      if (increment >= 0) tail30mAmountSharePct = (increment / finalCum) * 100;
-    }
+  if (final && final.time >= '14:30' && (!last || final.time >= last.time)
+      && final.amount! > 0 && preTail.length && monotonic) {
+    tail30mAmountSharePct = (final.amount! - preTail[preTail.length - 1].amount!) / final.amount! * 100;
   }
   return { tail30mReturnPct, tail30mAmountSharePct, intradayDrawbackPct };
 }
@@ -475,20 +499,32 @@ export async function analyzeEndOfDayStocks(
     basicStocks,
     async (stock) => {
       const timeline = await getTodayTimeline(stock.routeCode);
-      const { ratio, points } = calculateTimelineStrength(timeline);
+      const tradeDate = (timeline as {date?: string}).date;
+      const clock = new Intl.DateTimeFormat('en-GB', {
+        timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+      }).formatToParts(new Date());
+      const part = (type: string) => clock.find(p => p.type === type)?.value ?? '';
+      const today = part('year') + '-' + part('month') + '-' + part('day');
+      if (tradeDate && tradeDate > today) return null;
+      const cutoff = tradeDate === today ? part('hour') + ':' + part('minute') : '15:00';
+      const { ratio, points } = calculateTimelineStrength(timeline, cutoff);
 
-      if (ratio < filters.timelineAboveAvgRatio) {
+      if (ratio === null || ratio < filters.timelineAboveAvgRatio) {
         return null;
       }
 
       const enriched: EndOfDayStock = {
         ...stock,
         timeline: points,
+        timelineTradeDate: tradeDate,
+        timelineAverageBasis: [...new Set(points.filter(p => positive(p.price) && positive(p.avgPrice))
+          .map(p => p.avgPriceBasis ?? 'UNDECLARED_SOURCE'))].join(' / '),
         timelineAboveAvgRatio: ratio,
       };
 
       // M1 前结构校验：累计差分尾盘额占比 / 尾盘斜率 / 日内回撤
-      const structure = computeTimelineStructure(points);
+      const structure = computeTimelineStructure(points, cutoff);
       return applyEodStructureFilters(enriched, filters, structure);
     },
     {

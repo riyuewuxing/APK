@@ -262,6 +262,8 @@ export interface OrthogonalDecisionPacket {
   currently_held: boolean;
   action: DecisionAction;
   action_label_zh: string;
+  research_action?: DecisionAction | null;
+  admission_state?: 'ADMITTED' | 'NOT_ADMITTED' | 'LEGACY_UNVERIFIED';
   supporting_clusters_count: number;
   contradicting_clusters_count: number;
   unknown_clusters_count: number;
@@ -351,11 +353,15 @@ export interface KlineMarkerPoint {
 export interface BacktestSummaryViewModel {
   strategy_name: string;
   total_return_1x_pct: number;
-  total_return_2x_pct: number;
+  total_return_2x_pct: number | null;
   max_drawdown_1x_pct: number;
   sharpe_1x: number | null;
-  win_rate_pct: number;
-  trade_count: number;
+  win_rate_pct: number | null;
+  trade_count: number | null;
+  statistics_basis?: string;
+  positive_day_rate_pct?: number | null;
+  position_change_count?: number | null;
+  observation_count?: number | null;
   underwater_dates: string[];
   underwater_drawdowns_pct: number[];
   warnings: string[];

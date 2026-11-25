@@ -31,8 +31,13 @@ export interface EodStructureFactors {
   tail_30m_amount_share_pct: number | null;
   intraday_drawback_pct: number | null;
   timeline_above_avg_ratio: number | null;
+  timeline_average_basis?: string | null;
   chip_profit_ratio_approx: number | null;
   overhead_pressure_pct: number | null;
+  chip_known_coverage_pct?: number | null;
+  chip_unknown_pct?: number | null;
+  chip_break_even_pct?: number | null;
+  chip_bin_sensitivity_pp?: number | null;
   main_net_inflow_10k: number | null;
   board_resonance: number | null;
   chip_estimate_basis: string;

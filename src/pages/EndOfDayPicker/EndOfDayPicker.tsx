@@ -398,7 +398,9 @@ function StockCard({
             {formatNumber(stock.change)}
           </span>
           {stock.timelineAboveAvgRatio !== undefined && (
-            <span className={styles.timelineRatio}>
+            <span className={styles.timelineRatio} title={stock.timelineAverageBasis === 'CUMULATIVE_AMOUNT_PER_SHARE'
+              ? '实际累计额 / 累计量'
+              : '分时均价可能为分钟收盘价量加权近似或口径未声明，不是逐笔 VWAP'}>
               强度 {stock.timelineAboveAvgRatio.toFixed(0)}%
             </span>
           )}
@@ -445,9 +447,10 @@ function StockCard({
               尾盘额占比 {stock.tail30mAmountSharePct.toFixed(1)}%
             </span>
           )}
-          {stock.chipProfitRatioApprox !== undefined && stock.chipProfitRatioApprox !== null && (
-            <span className={styles.eodBadge} title="基于日换手率衰减的近似估算（非 Level-2）">
-              估算获利盘 {stock.chipProfitRatioApprox.toFixed(1)}%
+          {stock.chipEstimateBasis === 'PRICE_BINNED_DAILY_TURNOVER_APPROX'
+            && stock.chipProfitRatioApprox != null && stock.chipKnownCoveragePct != null && (
+            <span className={styles.eodBadge} title="前收盘存量的日线价格分箱模型；未知初始存量不计入获利或套牢，非 Level-2">
+              已建模获利 {stock.chipProfitRatioApprox.toFixed(1)}% · 覆盖 {stock.chipKnownCoveragePct.toFixed(1)}%
             </span>
           )}
           {stock.vettingStatus && (
@@ -829,7 +832,7 @@ export function EndOfDayPicker() {
           name: s.name,
           pick_price: s.price,
           change_percent: s.changePercent,
-          timeline: s.timeline,
+          timeline: s.timeline?.map(p => ({...p, time: s.timelineTradeDate ? s.timelineTradeDate + ' ' + p.time : p.time})),
           tail_30m_return_pct: s.tail30mReturnPct ?? null,
           tail_30m_amount_share_pct: s.tail30mAmountSharePct ?? null,
         })),
@@ -846,6 +849,8 @@ export function EndOfDayPicker() {
               tail30mReturnPct: hit.structure_factors.tail_30m_return_pct,
               tail30mAmountSharePct: hit.structure_factors.tail_30m_amount_share_pct,
               chipProfitRatioApprox: hit.structure_factors.chip_profit_ratio_approx,
+              chipEstimateBasis: hit.structure_factors.chip_estimate_basis,
+              chipKnownCoveragePct: hit.structure_factors.chip_known_coverage_pct,
               mainNetInflow10k: hit.structure_factors.main_net_inflow_10k,
               vettingStatus: hit.vetting.vetting_status,
               vettingFlags: hit.vetting.flags,

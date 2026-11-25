@@ -42,9 +42,9 @@ describe('isLimitUp / isLimitDown', () => {
 });
 
 describe('calculateTimelineStrength', () => {
-  it('returns a zero ratio for an empty timeline', () => {
+  it('returns an unknown ratio for an empty timeline', () => {
     const timeline = { data: [] } as unknown as TodayTimelineResponse;
-    expect(calculateTimelineStrength(timeline)).toEqual({ ratio: 0, points: [] });
+    expect(calculateTimelineStrength(timeline)).toEqual({ ratio: null, points: [] });
   });
 
   it('computes the share of points at or above the average price', () => {
@@ -60,6 +60,13 @@ describe('calculateTimelineStrength', () => {
     const { ratio, points } = calculateTimelineStrength(timeline);
     expect(ratio).toBe(75);
     expect(points).toHaveLength(4);
+  });
+
+  it('excludes invalid price-average pairs from denominator', () => {
+    const timeline = { data: [{time: '09:30', price: 10, avgPrice: 9},
+      {time: '09:31', price: 10, avgPrice: NaN}] } as unknown as TodayTimelineResponse;
+    expect(calculateTimelineStrength(timeline).ratio).toBe(100);
+    expect(calculateTimelineStrength({ data: [{time: '09:30', price: 10, avgPrice: 0}] } as unknown as TodayTimelineResponse).ratio).toBeNull();
   });
 });
 
@@ -131,6 +138,28 @@ describe('computeTimelineStructure', () => {
       { time: '15:00', price: 10.5, avgPrice: 10.2 },
     ]);
     expect(noAmount.tail30mAmountSharePct).toBeNull();
+  });
+
+  it('does not infer a zero tail share without a tail observation', () => {
+    expect(computeTimelineStructure(cumulativeTimeline.filter(p => p.time < '14:30')).tail30mAmountSharePct).toBeNull();
+  });
+
+  it('rejects decreasing cumulative amounts and conflicting duplicates', () => {
+    const points = [{time: '14:29', price: 10, avgPrice: 10, amount: 100},
+      {time: '14:30', price: 10, avgPrice: 10, amount: 90},
+      {time: '15:00', price: 11, avgPrice: 10, amount: 200}];
+    expect(computeTimelineStructure(points).tail30mAmountSharePct).toBeNull();
+    expect(computeTimelineStructure([...points, {...points[2], price: 99}]).tail30mReturnPct).toBeNull();
+  });
+
+  it('clips future points at the supplied observation cutoff', () => {
+    const points = [{time: '14:29', price: 10, avgPrice: 10, amount: 100},
+      {time: '14:30', price: 10, avgPrice: 10, amount: 110},
+      {time: '14:45', price: 11, avgPrice: 10, amount: 200},
+      {time: '15:00', price: 99, avgPrice: 10, amount: 1000}];
+    const result = computeTimelineStructure(points, '14:45');
+    expect(result.tail30mReturnPct).toBeCloseTo(10);
+    expect(result.tail30mAmountSharePct).toBeCloseTo(50);
   });
 
   it('never sums cumulative amounts (>100%)', () => {

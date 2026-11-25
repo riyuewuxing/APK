@@ -13,6 +13,20 @@ jobs:
       - name: Checkout sanitized frontend shell
         uses: actions/checkout@v4
 
+      - name: Verify reviewed Stage5 projection
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, re, subprocess
+          scope = json.loads(pathlib.Path("stage5_public_build_scope.json").read_text())
+          expected = [".github/workflows/build-apk.yml","e2e/mock_server.py","src/components/expert/StockExpertEvidenceCard.tsx","src/pages/EndOfDayPicker/EndOfDayPicker.tsx","src/pages/ExpertWorkbench/ExpertWorkbench.tsx","src/services/analysis.test.ts","src/services/analysis.ts","src/services/eodApi.ts","src/services/expertApi.ts"]
+          assert sorted(row["path"] for row in scope["files"]) == expected
+          assert re.fullmatch(r"[0-9a-f]{40}", scope["private_source_commit"])
+          for row in scope["files"]:
+              actual = subprocess.check_output(["git", "hash-object", row["path"]], text=True).strip()
+              assert actual == row["public_blob_sha"], f"scope mismatch: {row['path']}"
+          print("Reviewed projection verified:", scope["private_source_commit"])
+          PY
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -28,6 +42,7 @@ jobs:
       - name: Install frontend dependencies and build
         run: |
           pnpm install --frozen-lockfile
+          pnpm exec vitest run src/services/analysis.test.ts
           pnpm build
           npx cap sync android
 
@@ -96,7 +111,7 @@ jobs:
           echo "$SIGNER_OUT"
           export SIGNER_OUT
           python3 -c '
-          import json, os, re, sys, zipfile
+          import hashlib, json, os, re, sys, zipfile
           with zipfile.ZipFile("android/app/build/outputs/apk/debug/app-debug.apk") as zf:
               abis = sorted({p.split("/")[1] for p in zf.namelist() if p.startswith("lib/") and p.count("/") >= 2})
               print("Detected ABIs:", abis)
@@ -113,6 +128,10 @@ jobs:
               "version_name": os.environ["TZ_VERSION_NAME"],
               "signing_sha256": m.group(1).lower(),
               "abis": abis,
+              "public_commit": os.environ["GITHUB_SHA"],
+              "private_source_commit": json.load(open("stage5_public_build_scope.json"))["private_source_commit"],
+              "scope_sha256": hashlib.sha256(open("stage5_public_build_scope.json", "rb").read()).hexdigest(),
+              "apk_sha256": hashlib.sha256(open("android/app/build/outputs/apk/debug/app-debug.apk", "rb").read()).hexdigest(),
           }
           with open("android/app/build/outputs/apk/debug/apk_build_meta.json", "w", encoding="utf-8") as fh:
               json.dump(meta, fh, indent=2)

@@ -61,7 +61,7 @@ export function StockExpertEvidenceCard({ stockCode }: StockExpertEvidenceCardPr
       title="投资专家证据卡（PIT 研判）"
       extra={
         card ? (
-          <ActionDecisionPill action={card.decision_packet.action} showZh={false} />
+          <ActionDecisionPill action={card.decision_packet.admission_state === 'ADMITTED' ? card.decision_packet.action : card.decision_packet.action === 'INSUFFICIENT_EVIDENCE' ? 'INSUFFICIENT_EVIDENCE' : 'WAIT'} showZh={false} />
         ) : undefined
       }
     >
@@ -74,7 +74,10 @@ export function StockExpertEvidenceCard({ stockCode }: StockExpertEvidenceCardPr
       ) : (
         <div className={styles.expertWrap}>
           <div className={styles.topRow}>
-            <ActionDecisionPill action={card.decision_packet.action} />
+            <ActionDecisionPill action={card.decision_packet.admission_state === 'ADMITTED' ? card.decision_packet.action : card.decision_packet.action === 'INSUFFICIENT_EVIDENCE' ? 'INSUFFICIENT_EVIDENCE' : 'WAIT'} />
+            {card.decision_packet.admission_state !== 'ADMITTED' && (
+              <span className={styles.mutedHint}>未准入 · 研究方向：{card.decision_packet.research_action ?? '未验证'}（非正式建议）</span>
+            )}
             <div className={styles.convictionBox}>
               <span className={styles.convictionLabel}>正交净信念</span>
               <span className={styles.convictionScore}>

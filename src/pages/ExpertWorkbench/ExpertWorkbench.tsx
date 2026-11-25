@@ -714,7 +714,7 @@ export function ExpertWorkbench() {
                       <>
                         <div className={styles.kpiGrid4}>
                           <div className={styles.kpiTile}>
-                            <span className={styles.kpiLabel}>1x 基准摩擦收益</span>
+                            <span className={styles.kpiLabel}>{researchCard.backtest_summary.statistics_basis === 'FUND_NAV_OBSERVATIONS' ? '净值区间收益' : '1x 研究标尺收益'}</span>
                             <span className={styles.kpiVal}>
                               {formatPercent(researchCard.backtest_summary.total_return_1x_pct)}
                             </span>
@@ -722,7 +722,9 @@ export function ExpertWorkbench() {
                           <div className={styles.kpiTile}>
                             <span className={styles.kpiLabel}>2x 高摩擦收益</span>
                             <span className={styles.kpiVal}>
-                              {formatPercent(researchCard.backtest_summary.total_return_2x_pct)}
+                              {researchCard.backtest_summary.statistics_basis === 'FUND_NAV_OBSERVATIONS'
+                                || researchCard.backtest_summary.total_return_2x_pct == null
+                                ? '不适用' : formatPercent(researchCard.backtest_summary.total_return_2x_pct)}
                             </span>
                           </div>
                           <div className={styles.kpiTile}>
@@ -733,16 +735,27 @@ export function ExpertWorkbench() {
                             </span>
                           </div>
                           <div className={styles.kpiTile}>
-                            <span className={styles.kpiLabel}>胜率 / 成交次数</span>
+                            <span className={styles.kpiLabel}>
+                              {researchCard.backtest_summary.statistics_basis === 'FUND_NAV_OBSERVATIONS'
+                                ? '净值上涨日占比 / 观察数'
+                                : researchCard.backtest_summary.statistics_basis === 'ADJUSTED_PRICE_RESEARCH_BENCHMARK'
+                                  ? '非零收益日中正收益占比 / 换仓日'
+                                  : '净胜率 / 已平仓数（需验证）'}
+                            </span>
                             <span className={styles.kpiVal}>
-                              {researchCard.backtest_summary.win_rate_pct.toFixed(1)}% /{' '}
-                              {researchCard.backtest_summary.trade_count}
+                              {['FUND_NAV_OBSERVATIONS', 'ADJUSTED_PRICE_RESEARCH_BENCHMARK'].includes(researchCard.backtest_summary.statistics_basis ?? '')
+                                ? researchCard.backtest_summary.positive_day_rate_pct == null ? 'N/A' : researchCard.backtest_summary.positive_day_rate_pct.toFixed(1) + '%'
+                                : 'N/A'} /{' '}
+                              {researchCard.backtest_summary.statistics_basis === 'FUND_NAV_OBSERVATIONS'
+                                ? researchCard.backtest_summary.observation_count ?? 'N/A'
+                                : researchCard.backtest_summary.statistics_basis === 'ADJUSTED_PRICE_RESEARCH_BENCHMARK'
+                                  ? researchCard.backtest_summary.position_change_count ?? 'N/A' : 'N/A'}
                             </span>
                           </div>
                         </div>
 
                         <div className={styles.subSectionTitle}>
-                          T+1 合规与防未来函数警示 ({researchCard.backtest_summary.strategy_name})
+                          统计口径与限制 ({researchCard.backtest_summary.strategy_name})
                         </div>
                         <div className={styles.clusterAccordion}>
                           {researchCard.backtest_summary.warnings.map((w) => (
@@ -1610,7 +1623,10 @@ export function ExpertWorkbench() {
                         {researchCard.subject_id} · {researchCard.subject_name}
                       </h1>
                       <span className={styles.assetTag}>{researchCard.asset_type}</span>
-                      <ActionDecisionPill action={researchCard.decision_packet.action} />
+                      <ActionDecisionPill action={researchCard.decision_packet.admission_state === 'ADMITTED' ? researchCard.decision_packet.action : researchCard.decision_packet.action === 'INSUFFICIENT_EVIDENCE' ? 'INSUFFICIENT_EVIDENCE' : 'WAIT'} />
+                      {researchCard.decision_packet.admission_state !== 'ADMITTED' && (
+                        <span className={styles.assetTag}>未准入 · 研究方向 {researchCard.decision_packet.research_action ?? '未验证'}（非正式建议）</span>
+                      )}
                     </div>
                     <ProvenancePill badge={researchCard.header_badge} />
                   </div>
