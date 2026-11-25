@@ -1,16 +1,20 @@
 {
   "schema": "stage5_reviewed_public_projection_v1",
   "private_source_commit": "87c27219b6660c286dea2b9e8f6f2d666799115c",
-  "public_base_commit": "cd2b64d35eec39a8f7aaee98ae4cb7406cdecbe5",
+  "public_base_commit": "06c085932b882abc7539d4ace8a49b628767c9f3",
   "scope": "Cumulative reviewed frontend projection, adapted for read-only public shell; synthetic UI fixture only. No private backend or account records.",
   "files": [
     {
       "path": ".github/workflows/build-apk.yml",
-      "public_blob_sha": "ff2f5a9118082858d2df9622471091075ddf54af"
+      "public_blob_sha": "44174525a6e68e8cfce34228d7ddfbf5123a8a69"
     },
     {
       "path": "e2e/mock_server.py",
       "public_blob_sha": "8b06e4b80139c6cf2361a6d2c984f87823cd161e"
+    },
+    {
+      "path": "e2e/verify_playwright_mobile.mjs",
+      "public_blob_sha": "c0b5909e712e328827b89d3d059f9e90c16129cc"
     },
     {
       "path": "src/components/expert/StockExpertEvidenceCard.tsx",

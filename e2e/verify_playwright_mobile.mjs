@@ -321,6 +321,15 @@ async function main() {
   const page = await context.newPage();
   const pageErrors = [];
   const consoleErrors = [];
+  const expectedHistoryUnavailable = [];
+  const expectedHistoryConsoleErrors = [];
+  const isExpectedHistoryRequest = (url) => {
+    try {
+      const u = new URL(url);
+      return u.origin === new URL(args.baseUrl).origin && u.pathname === '/api/quantstats/tearsheet'
+        && u.searchParams.get('account_id') === 'FND-TIANTIAN-002';
+    } catch { return false; }
+  };
   const server5xx = [];
   const overflowRoutes = [];
   const renderErrors = [];
@@ -330,11 +339,16 @@ async function main() {
   page.on('pageerror', (err) => pageErrors.push(err.message));
   page.on('console', (msg) => {
     if (msg.type() === 'error') {
-      consoleErrors.push(msg.text());
+      if (isExpectedHistoryRequest(msg.location().url) && /status of 422/.test(msg.text())) {
+        expectedHistoryConsoleErrors.push(msg.text());
+      } else {
+        consoleErrors.push(msg.text());
+      }
     }
   });
   page.on('response', (res) => {
     const u = new URL(res.url());
+    if (isExpectedHistoryRequest(res.url()) && res.status() === 422) expectedHistoryUnavailable.push(res.url());
     if ((u.hostname === '127.0.0.1' || u.hostname === 'localhost') && res.status() >= 500) {
       server5xx.push({ url: res.url(), status: res.status() });
     }
@@ -352,7 +366,7 @@ async function main() {
   await page.getByText('天天基金 (FND)').first().click();
   await page.waitForTimeout(300);
   await page.getByText('QuantStats 机构级报告').first().click();
-  await page.waitForTimeout(400);
+  await page.getByText('真实共同历史不足或账户快照不一致，不以合成收益代替。').waitFor({ state: 'visible', timeout: 8000 });
   await page.getByText('300476 胜宏科技').first().click();
   await page.waitForTimeout(400);
   await visit('/expert', '01_expert.png');
@@ -489,6 +503,8 @@ async function main() {
     passed:
       pageErrors.length === 0 &&
       consoleErrors.length === 0 &&
+      expectedHistoryUnavailable.length > 0 &&
+      expectedHistoryConsoleErrors.length <= expectedHistoryUnavailable.length &&
       server5xx.length === 0 &&
       overflowRoutes.length === 0 &&
       renderErrors.length === 0 &&
@@ -497,6 +513,8 @@ async function main() {
       screenshots.length >= 13,
     pageErrors,
     consoleErrors,
+    expectedHistoryUnavailable,
+    expectedHistoryConsoleErrors,
     server5xx,
     overflowRoutes,
     renderErrors,
