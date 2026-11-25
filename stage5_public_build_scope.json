@@ -1,59 +1,57 @@
 {
   "schema": "stage5_reviewed_public_projection_v1",
-  "private_source_commit": "5687faeee62b93da56b69710058a071461b84644",
-  "public_base_commit": "8017f6a18d5bf7a2336443bc54a82448f0f239f8",
-  "scope": "reviewed frontend patch hunks plus synthetic public test fixture and build provenance; not full private source parity",
+  "private_source_commit": "87c27219b6660c286dea2b9e8f6f2d666799115c",
+  "public_base_commit": "cd2b64d35eec39a8f7aaee98ae4cb7406cdecbe5",
+  "scope": "Cumulative reviewed frontend projection, adapted for read-only public shell; synthetic UI fixture only. No private backend or account records.",
   "files": [
     {
       "path": ".github/workflows/build-apk.yml",
-      "public_blob_sha": "39151c1f615fa7a5874c324a08993b8b5a407f55"
+      "public_blob_sha": "ff2f5a9118082858d2df9622471091075ddf54af"
     },
     {
       "path": "e2e/mock_server.py",
-      "public_blob_sha": "17643a2fd340c84fc156f72e29e89fa6d5ac7fd5"
+      "public_blob_sha": "8b06e4b80139c6cf2361a6d2c984f87823cd161e"
     },
     {
       "path": "src/components/expert/StockExpertEvidenceCard.tsx",
-      "public_blob_sha": "3f47bb53921c731890a5ad9e87beda8fa1a6bd38",
-      "applied_hunks": 2,
-      "omitted_hunks": 0
+      "public_blob_sha": "3f47bb53921c731890a5ad9e87beda8fa1a6bd38"
     },
     {
       "path": "src/pages/EndOfDayPicker/EndOfDayPicker.tsx",
-      "public_blob_sha": "d1787d38c763bc326872264176fbafa360b8c064",
-      "applied_hunks": 4,
-      "omitted_hunks": 1
+      "public_blob_sha": "d1787d38c763bc326872264176fbafa360b8c064"
     },
     {
       "path": "src/pages/ExpertWorkbench/ExpertWorkbench.tsx",
-      "public_blob_sha": "76c9d0e37f41e73cec8d2af44e2219af46ee4892",
-      "applied_hunks": 3,
-      "omitted_hunks": 0
+      "public_blob_sha": "239f58c8db2544d28584659188c323704832ec21"
+    },
+    {
+      "path": "src/pages/Watchlist/WatchlistResearchDock.tsx",
+      "public_blob_sha": "1b12f2de26d0cba8fc643207629e3236b6a1ea13"
     },
     {
       "path": "src/services/analysis.test.ts",
-      "public_blob_sha": "069b24a2fa5f3b2498de4004e98a5943bbadb2b1",
-      "applied_hunks": 3,
-      "omitted_hunks": 0
+      "public_blob_sha": "069b24a2fa5f3b2498de4004e98a5943bbadb2b1"
     },
     {
       "path": "src/services/analysis.ts",
-      "public_blob_sha": "cec92ceefca7afa989f5a290d84cc663eccbb83e",
-      "applied_hunks": 5,
-      "omitted_hunks": 0
+      "public_blob_sha": "cec92ceefca7afa989f5a290d84cc663eccbb83e"
     },
     {
       "path": "src/services/eodApi.ts",
-      "public_blob_sha": "7caf063f0e5eee0430d02c6171311afd625dd85c",
-      "applied_hunks": 1,
-      "omitted_hunks": 0
+      "public_blob_sha": "7caf063f0e5eee0430d02c6171311afd625dd85c"
     },
     {
       "path": "src/services/expertApi.ts",
-      "public_blob_sha": "162d0b0f90ad65336c15ea4da69d25c11e6157ee",
-      "applied_hunks": 2,
-      "omitted_hunks": 0
+      "public_blob_sha": "0cfdbd33ed21e3cbacd157751ea7aea2a787c578"
+    },
+    {
+      "path": "src/services/researchAdvApi.ts",
+      "public_blob_sha": "280ecf401f348646b9ed5af368badd80c605177f"
+    },
+    {
+      "path": "src/services/xrayApi.ts",
+      "public_blob_sha": "4112065b32b3b452291371c35a9cf52d3d00823e"
     }
   ],
-  "omission": "Public shell has no private AI context payload; that private-only hunk is deliberately excluded."
+  "omission": "Public shell deliberately excludes desktop paper-book editing, private AI context, account records and private backend. No claim of full private parity."
 }

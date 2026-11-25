@@ -152,13 +152,16 @@ export interface StockAccountSummary {
   as_of: string;
   reference_close_date: string;
   total_asset: number;
-  frozen_baseline_total: number;
-  change_pct: number;
+  frozen_baseline_total: number | null;
+  change_pct: number | null;
   cash_amount: number;
   cash_weight_pct: number;
-  plan_b_total: number;
-  plan_b_diff: number;
-  plan_b_diff_pct: number;
+  plan_b_total: number | null;
+  plan_b_diff: number | null;
+  plan_b_diff_pct: number | null;
+  snapshot_id?: string | null;
+  book_status?: string;
+  valuation_basis?: string;
   positions: StockPositionRow[];
   hypothesis_reviews: HypothesisReviewRow[];
   badge: ProvenanceBadge;
@@ -207,6 +210,8 @@ export interface FundAccountSummary {
   account_name: string;
   as_of: string;
   pending_as_of: string;
+  snapshot_id?: string | null;
+  book_status?: string;
   total_asset: number;
   daily_pnl: number;
   holding_pnl: number;
@@ -222,6 +227,7 @@ export interface WorkbenchState {
   governance: GlobalGovernanceStatus;
   priority_alerts: string[];
   stock_account: StockAccountSummary;
+  frozen_stock_account?: StockAccountSummary | null;
   fund_account: FundAccountSummary;
   registered_accounts: string[];
   research_only: boolean;
@@ -413,6 +419,8 @@ export interface DeepResearchCard {
   asset_type: string;
   as_of: string;
   decision_packet: OrthogonalDecisionPacket;
+  account_snapshot_id?: string | null;
+  account_snapshot_status?: string | null;
   turnaround_report: TurnaroundAndTrapReport | null;
   asset_specific_metrics: Record<string, string>;
   opportunity_cost_matrix: OpportunityCostMatrixRow[];
@@ -567,6 +575,8 @@ export interface QuantStatsSummary {
   as_of: string;
   total_asset_cny: number;
   holding_count: number;
+  account_snapshot_id?: string | null;
+  performance_basis?: string;
   benchmark_label: string;
   quantstats_version: string;
   metrics: QuantStatsMetrics;

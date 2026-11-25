@@ -106,6 +106,9 @@ def _workbench_payload() -> dict[str, Any]:
             "account_name": "演示股票组合",
             "as_of": "2026-11-13",
             "reference_close_date": "2026-11-13",
+            "book_status": "SEEDED_DEFAULT",
+            "snapshot_id": "DEMO-STOCK-SNAPSHOT",
+            "valuation_basis": "DEMO_REFERENCE_ONLY",
             "total_asset": 200000.0,
             "frozen_baseline_total": 195000.0,
             "change_pct": 2.56,
@@ -156,6 +159,8 @@ def _workbench_payload() -> dict[str, Any]:
             "account_name": "演示基金组合",
             "as_of": "2026-11-13",
             "pending_as_of": "2026-11-13",
+            "book_status": "FROZEN_HISTORICAL",
+            "snapshot_id": "DEMO-FUND-SNAPSHOT",
             "total_asset": 100000.0,
             "daily_pnl": 650.0,
             "holding_pnl": 4800.0,
@@ -245,6 +250,8 @@ def _research_payload(subject_id: str) -> dict[str, Any]:
         "subject_name": name,
         "asset_type": asset_type,
         "as_of": "2026-11-13",
+        "account_snapshot_id": "DEMO-STOCK-SNAPSHOT",
+        "account_snapshot_status": "SEEDED_DEFAULT",
         "decision_packet": {
             "subject_id": subject_id,
             "subject_name": name,
@@ -492,6 +499,8 @@ def _quantstats_payload() -> dict[str, Any]:
         "as_of": "2026-11-13",
         "total_asset_cny": 200000.0,
         "holding_count": 2,
+        "account_snapshot_id": "DEMO-STOCK-SNAPSHOT",
+        "performance_basis": "SYNTHETIC_UI_FIXTURE_ONLY",
         "benchmark_label": "沪深300(合成)",
         "quantstats_version": "0.0.64-demo",
         "metrics": {
@@ -1054,8 +1063,11 @@ def _debate_payload(subject_id: str, asset_type_hint: str = "") -> dict[str, Any
         "asset_type": asset_type_hint.strip().upper() or "STOCK",
         "as_of": "2026-11-18",
         "claim_ledger_status": "VERIFIED",
-        "action_lock": "ALLOW_ADVICE",
-        "action_label_zh": "证据充分，可给出观察与配置研究建议",
+        "action_lock": "WAIT",
+        "action_label_zh": "未准入 · 等待（模拟）",
+        "research_action": "BUY",
+        "admission_state": "NOT_ADMITTED",
+        "account_snapshot_id": "DEMO-STOCK-SNAPSHOT",
         "composite_conviction_score": 71.0,
         "minesweeper_overall_status": "RED_FLAG",
         "minesweeper_red_flags": 1,
@@ -1784,7 +1796,12 @@ def create_server(args: argparse.Namespace) -> ThreadingHTTPServer:
                     self._send_json(200, _audit_payload())
                     return
                 if path == "/api/quantstats/tearsheet":
-                    self._send_json(200, _quantstats_payload())
+                    if (query.get("account_id") or ["STK-ALIPAY-001"])[0] == "FND-TIANTIAN-002":
+                        self._send_json(422, {"detail": "DEMO: 历史数据不足", "source_status": "INSUFFICIENT_REAL_HISTORY"})
+                    elif (query.get("format") or ["json"])[0] == "html":
+                        self._send_bytes(200, b"<html><body><h3>QuantStats Synthetic Demo Tearsheet</h3></body></html>", "text/html; charset=utf-8")
+                    else:
+                        self._send_json(200, _quantstats_payload())
                     return
                 if path == "/api/quantstats/html":
                     self._send_bytes(
@@ -1805,6 +1822,10 @@ def create_server(args: argparse.Namespace) -> ThreadingHTTPServer:
                     if payload is None:
                         self._send_json(400, {"detail": f"Unsupported account_id={account_id!r}"})
                     else:
+                        payload["account_snapshots"] = {
+                            "STK-ALIPAY-001": {"snapshot_id": "DEMO-STOCK-SNAPSHOT", "as_of": "2026-11-13", "status": "SEEDED_DEFAULT"},
+                            "FND-TIANTIAN-002": {"snapshot_id": "DEMO-FUND-SNAPSHOT", "as_of": "2026-11-13", "status": "FROZEN_HISTORICAL"},
+                        }
                         self._send_json(200, payload)
                     return
                 if path == "/api/scheduler/status":

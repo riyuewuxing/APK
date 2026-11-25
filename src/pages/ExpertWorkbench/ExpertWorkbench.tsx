@@ -167,6 +167,8 @@ export function ExpertWorkbench() {
   const hideDesktopNativeControls = isNativeApp() || isMobileViewport();
   const useAuthenticatedHtmlSrcDoc = shouldUseRemoteDualChannel();
 
+  const activeAccountSnapshotId = workbench?.stock_account.snapshot_id ?? null;
+  const accountBlocked = Boolean(wbError && /ACCOUNT_CORRUPTED|台账损坏/.test(wbError));
   const holdingSdkCodes = useMemo(() => {
     if (!workbench?.stock_account.positions.length) return [];
     return Array.from(
@@ -247,11 +249,13 @@ export function ExpertWorkbench() {
     const controller = new AbortController();
     fetchWorkbench(controller.signal)
       .then((res) => {
+        if (controller.signal.aborted) return;
         setWorkbench(res);
         setWbError(null);
       })
       .catch((err: unknown) => {
         if (controller.signal.aborted) return;
+        setWorkbench(null);
         setWbError(err instanceof Error ? err.message : '加载组合工作台失败');
       });
     return () => controller.abort();
@@ -262,6 +266,7 @@ export function ExpertWorkbench() {
     const controller = new AbortController();
     fetchResearchCard(activeSubjectId, controller.signal, activeAssetType)
       .then((card) => {
+        if (controller.signal.aborted) return;
         setResearchState({ subjectId: activeRequestKey, card, error: null });
       })
       .catch((err: unknown) => {
@@ -273,14 +278,16 @@ export function ExpertWorkbench() {
         });
       });
     return () => controller.abort();
-  }, [activeSubjectId, activeAssetType, activeRequestKey]);
+  }, [activeSubjectId, activeAssetType, activeRequestKey, activeAccountSnapshotId]);
 
   // 按需加载选中账户 QuantStats 报告 JSON（避免非该 Tab 时提前计算）
   useEffect(() => {
     if (detailTab !== 'quantstats') return;
     const controller = new AbortController();
+    setQsState({ accountId: '', data: null });
     fetchQuantStatsJson(accountTab, controller.signal)
       .then((qs) => {
+        if (controller.signal.aborted) return;
         setQsState({ accountId: accountTab, data: qs });
       })
       .catch(() => {
@@ -289,15 +296,17 @@ export function ExpertWorkbench() {
         }
       });
     return () => controller.abort();
-  }, [accountTab, detailTab]);
+  }, [accountTab, detailTab, activeAccountSnapshotId]);
 
   // 移动端/远程双通道下通过 Bearer 鉴权拉取 QuantStats HTML 供 iframe srcDoc 渲染
   useEffect(() => {
     if (!useAuthenticatedHtmlSrcDoc) return;
     if (detailTab !== 'quantstats' && !qsModalOpen) return;
     const controller = new AbortController();
+    setQsHtmlState({ accountId: '', html: null, error: false });
     fetchQuantStatsHtml(accountTab, controller.signal)
       .then((html) => {
+        if (controller.signal.aborted) return;
         setQsHtmlState({ accountId: accountTab, html, error: false });
       })
       .catch(() => {
@@ -306,7 +315,7 @@ export function ExpertWorkbench() {
         }
       });
     return () => controller.abort();
-  }, [accountTab, detailTab, qsModalOpen, useAuthenticatedHtmlSrcDoc]);
+  }, [accountTab, detailTab, qsModalOpen, useAuthenticatedHtmlSrcDoc, activeAccountSnapshotId]);
 
   useEffect(() => {
     if (detailTab !== 'xray') return;
@@ -324,7 +333,7 @@ export function ExpertWorkbench() {
         });
       });
     return () => controller.abort();
-  }, [detailTab, xrayAccount]);
+  }, [detailTab, xrayAccount, activeAccountSnapshotId]);
 
   useEffect(() => {
     if (detailTab !== 'debate') return;
@@ -342,7 +351,7 @@ export function ExpertWorkbench() {
         });
       });
     return () => controller.abort();
-  }, [detailTab, activeSubjectId, activeAssetType, activeRequestKey]);
+  }, [detailTab, activeSubjectId, activeAssetType, activeRequestKey, activeAccountSnapshotId]);
 
   useEffect(() => {
     if (!qsModalOpen) {
@@ -352,22 +361,27 @@ export function ExpertWorkbench() {
   }, [qsModalOpen]);
 
   const researchLoading = researchState.subjectId !== activeRequestKey;
+  const researchSnapshotMismatch = Boolean(activeAccountSnapshotId && researchState.card && researchState.card.account_snapshot_id !== activeAccountSnapshotId);
   const researchCard =
-    researchState.subjectId === activeRequestKey ? researchState.card : null;
-  const researchError =
-    researchState.subjectId === activeRequestKey ? researchState.error : null;
+    researchState.subjectId === activeRequestKey && !accountBlocked && !researchSnapshotMismatch ? researchState.card : null;
+  const researchError = accountBlocked ? '当前台账损坏，已阻断账户相关研判'
+    : researchSnapshotMismatch ? '研究卡与账户快照不一致，请刷新工作台'
+    : researchState.subjectId === activeRequestKey ? researchState.error : null;
 
   const qsLoading = qsState.accountId !== accountTab;
-  const quantStats = qsState.accountId === accountTab ? qsState.data : null;
+  const expectedReportSnapshot = accountTab === 'STK-ALIPAY-001' ? activeAccountSnapshotId : workbench?.fund_account.snapshot_id;
+  const quantStats = qsState.accountId === accountTab && !(accountTab === 'STK-ALIPAY-001' && accountBlocked)
+    && (!expectedReportSnapshot || qsState.data?.account_snapshot_id === expectedReportSnapshot) ? qsState.data : null;
   const quantStatsHtml =
     qsHtmlState.accountId === accountTab ? qsHtmlState.html : null;
   const quantStatsHtmlError =
     qsHtmlState.accountId === accountTab ? qsHtmlState.error : false;
   const xrayLoading = detailTab === 'xray' && xrayState.accountId !== xrayAccount;
-  const xrayData = xrayState.accountId === xrayAccount ? xrayState.data : null;
+  const xrayUsesStock = xrayAccount !== 'FND-TIANTIAN-002';
+  const xrayData = xrayState.accountId === xrayAccount && !(xrayUsesStock && (accountBlocked || (activeAccountSnapshotId && xrayState.data?.account_snapshots?.['STK-ALIPAY-001']?.snapshot_id !== activeAccountSnapshotId))) ? xrayState.data : null;
   const xrayError = xrayState.accountId === xrayAccount ? xrayState.error : null;
   const debateLoading = detailTab === 'debate' && debateState.requestKey !== activeRequestKey;
-  const debateData = debateState.requestKey === activeRequestKey ? debateState.data : null;
+  const debateData = debateState.requestKey === activeRequestKey && !accountBlocked && (!activeAccountSnapshotId || debateState.data?.account_snapshot_id === activeAccountSnapshotId) ? debateState.data : null;
   const debateError = debateState.requestKey === activeRequestKey ? debateState.error : null;
   const symbolInputValue =
     symbolDraft.subject === activeSubjectId ? symbolDraft.text : activeSubjectId;
@@ -782,13 +796,14 @@ export function ExpertWorkbench() {
                   <div>
                     <div className={styles.subjectHeader}>
                       <div className={styles.subSectionTitle}>
-                        账户 {accountTab} QuantStats 绩效拆解
+                        账户 {accountTab} QuantStats 历史研究模拟（非实际账户绩效）
                       </div>
                       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                         <Button
                           size="md"
                           variant="primary"
                           icon={<Maximize2 size={15} />}
+                          disabled={!quantStats}
                           onClick={() => setQsModalOpen(true)}
                         >
                           窗口内全屏展开报告
@@ -798,6 +813,7 @@ export function ExpertWorkbench() {
                             size="md"
                             variant="secondary"
                             icon={<ExternalLink size={15} />}
+                            disabled={!quantStats}
                             onClick={() => window.open(getQuantStatsHtmlUrl(accountTab), '_blank')}
                           >
                             新窗口打开全屏 Tear-Sheet
@@ -805,8 +821,11 @@ export function ExpertWorkbench() {
                         )}
                       </div>
                     </div>
-                    {qsLoading || !quantStats ? (
+                    <div className={styles.subSectionTitle}>固定参考权重，价格或单位净值变化；现金零收益假设，非含分红总回报。</div>
+                    {qsLoading ? (
                       <Loading text="正在计算 QuantStats 机构级指标..." />
+                    ) : !quantStats ? (
+                      <Empty description="真实共同历史不足或账户快照不一致，不以合成收益代替。" />
                     ) : (
                       <>
                         <div className={styles.kpiGrid4}>
@@ -1180,8 +1199,8 @@ export function ExpertWorkbench() {
                       <>
                         <div className={styles.xrayToolbar}>
                           <div className={styles.xrayMetaRow}>
-                            <span className={styles.xrayBadgeOk}>
-                              结论门禁: {debateData.action_label_zh}
+                            <span className={debateData.admission_state === 'ADMITTED' ? styles.xrayBadgeOk : styles.xrayBadgeWarn}>
+                              结论门禁: {debateData.admission_state === 'ADMITTED' ? debateData.action_label_zh : '未准入 · ' + (debateData.action_lock === 'INSUFFICIENT_EVIDENCE' ? '证据不足' : '等待')}
                             </span>
                             <span className={styles.mono}>
                               ClaimLedger: {debateData.claim_ledger_status} · 综合信念{' '}
@@ -1407,29 +1426,30 @@ export function ExpertWorkbench() {
               {accountTab === 'STK-ALIPAY-001' ? (
                 <div>
                   <ProvenancePill badge={workbench.stock_account.badge} compact variant="subtle" />
+                  <div className={styles.kpiSub}>账户状态：{workbench.stock_account.book_status ?? '历史或未标注快照'} · {workbench.stock_account.as_of} · 台账参考估值，非实时结算</div>
                   <div className={styles.kpiGrid2}>
                     <div className={styles.kpiTile}>
                       <span className={styles.kpiLabel}>
-                        {livePortfolioMetrics ? 'PIT总资产 / 盘中参考' : '股票账户总资产'}
+                        {livePortfolioMetrics ? '参考总资产 / 盘中估算' : '股票账户参考总资产'}
                       </span>
                       <span className={styles.kpiVal}>
                         ¥{formatNumber(workbench.stock_account.total_asset)}
                       </span>
                       {livePortfolioMetrics && (
                         <span className={styles.kpiSub}>
-                          实时 ¥{formatNumber(livePortfolioMetrics.totalLive)}
+                          盘中估算 ¥{formatNumber(livePortfolioMetrics.totalLive)}
                         </span>
                       )}
                     </div>
                     <div className={styles.kpiTile}>
                       <span className={styles.kpiLabel}>
-                        {livePortfolioMetrics ? '基线变化 / 今日实时' : '较基线变化'}
+                        {livePortfolioMetrics ? '参考变化 / 今日估算' : '参考账户变化'}
                       </span>
                       <span
-                        className={`${styles.kpiVal} ${workbench.stock_account.change_pct >= 0 ? 'text-rise' : 'text-fall'
+                        className={`${styles.kpiVal} ${(workbench.stock_account.change_pct ?? 0) >= 0 ? 'text-rise' : 'text-fall'
                           }`}
                       >
-                        {formatPercent(workbench.stock_account.change_pct)}
+                        {workbench.stock_account.change_pct == null ? 'N/A' : formatPercent(workbench.stock_account.change_pct)}
                       </span>
                       {livePortfolioMetrics && (
                         <span className={`${styles.kpiSub} ${getChangeColorClass(livePortfolioMetrics.dayPct)}`}>
@@ -1446,7 +1466,7 @@ export function ExpertWorkbench() {
                     <div className={styles.kpiTile}>
                       <span className={styles.kpiLabel}>Plan B 对照差额</span>
                       <span className={styles.kpiVal}>
-                        {formatPercent(workbench.stock_account.plan_b_diff_pct)}
+                        {workbench.stock_account.plan_b_diff_pct == null ? 'N/A' : formatPercent(workbench.stock_account.plan_b_diff_pct)}
                       </span>
                     </div>
                   </div>
@@ -1473,7 +1493,7 @@ export function ExpertWorkbench() {
                             <ActionDecisionPill action={pos.action} showZh={false} />
                           </div>
                           <div className={styles.holdingMeta}>
-                            <span>PIT ¥{pos.close_price.toFixed(2)}</span>
+                            <span>参考 ¥{pos.close_price.toFixed(2)}</span>
                             {liveQuote && liveQuote.price > 0 && (
                               <span className={getChangeColorClass(liveQuote.changePercent)}>
                                 现价 ¥{liveQuote.price.toFixed(2)} ({formatPercent(liveQuote.changePercent)})
@@ -1490,6 +1510,7 @@ export function ExpertWorkbench() {
               ) : (
                 <div>
                   <ProvenancePill badge={workbench.fund_account.badge} compact variant="subtle" />
+                  {workbench.fund_account.book_status === 'FROZEN_HISTORICAL' && <div className={styles.kpiSub}>历史快照 {workbench.fund_account.as_of}；赎回记录截至 {workbench.fund_account.pending_as_of}，当前状态未核实。</div>}
                   <div className={styles.kpiGrid2}>
                     <div className={styles.kpiTile}>
                       <span className={styles.kpiLabel}>基金组合总资产</span>
@@ -1850,7 +1871,7 @@ export function ExpertWorkbench() {
         </div>
       )}
 
-      {qsModalOpen && typeof document !== 'undefined' && createPortal(
+      {qsModalOpen && quantStats && typeof document !== 'undefined' && createPortal(
         <div
           className={styles.tearModalBackdrop}
           role="dialog"
@@ -1865,7 +1886,7 @@ export function ExpertWorkbench() {
           <div className={styles.tearModal}>
             <div className={styles.tearModalHeader}>
               <span className={styles.tearModalTitle}>
-                账户 {accountTab} · QuantStats 机构级绩效报告（只研不下单）
+                账户 {accountTab} · QuantStats 历史研究模拟（非实际账户绩效）
               </span>
               <Button
                 size="sm"

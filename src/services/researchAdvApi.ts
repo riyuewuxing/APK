@@ -98,6 +98,9 @@ export interface DebateSynthesisReport {
   claim_ledger_status: string;
   action_lock: string;
   action_label_zh: string;
+  research_action?: string | null;
+  admission_state?: string;
+  account_snapshot_id?: string | null;
   composite_conviction_score: number;
   minesweeper_overall_status: string;
   minesweeper_red_flags: number;

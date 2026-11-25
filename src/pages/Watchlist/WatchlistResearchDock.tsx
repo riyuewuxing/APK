@@ -125,6 +125,7 @@ export function WatchlistResearchDock({
         }
       } catch {
         if (!signal?.aborted) {
+          if (tab === 'portfolio') setWorkbenchData(null);
           setErrorTab((prev) => ({ ...prev, [tab]: true }));
         }
       } finally {

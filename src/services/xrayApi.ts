@@ -83,6 +83,7 @@ export interface PortfolioXRayResponse {
   account_id: XRayAccountId;
   account_label: string;
   as_of: string;
+  account_snapshots?: Record<string, { snapshot_id: string | null; as_of: string; status: string }>;
   include_amounts: boolean;
   total_equity_cny: number | null;
   unattributed_bucket_id: 'UNATTRIBUTED_FUND_RESIDUAL';
