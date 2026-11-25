@@ -623,7 +623,7 @@ export function ExpertWorkbench() {
                   <div>
                     <div className={styles.subSectionTitle}>跨资产替代机会成本对照矩阵 (含零仓位检验)</div>
                     {researchCard.opportunity_cost_matrix.length === 0 ? (
-                      <Empty description="当前未配置替代机会对照样本" />
+                      <Empty description="当前没有可展示的替代机会研究候选" />
                     ) : (
                       <div className={styles.tableWrap}>
                         <table className={styles.dataTable}>
@@ -631,10 +631,10 @@ export function ExpertWorkbench() {
                             <tr>
                               <th>替代标的</th>
                               <th>类型</th>
-                              <th>逻辑质量</th>
+                              <th>研究定位</th>
                               <th>零仓位检验</th>
                               <th>入选可行性</th>
-                              <th>治理原因 / 权衡摘要</th>
+                              <th>证据缺口 / 权衡摘要</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -646,11 +646,13 @@ export function ExpertWorkbench() {
                                 <td>{row.alternative_kind}</td>
                                 <td>{row.thesis_quality}</td>
                                 <td className={styles.mono}>{row.zero_position_test}</td>
-                                <td>{row.decision_eligible ? 'ELIGIBLE' : 'FILTERED'}</td>
+                                <td>{row.decision_eligible ? '已核验可比' : '仅研究候选'}</td>
                                 <td>
-                                  {[...row.governance_reasons, ...row.alternative_advantages]
-                                    .slice(0, 2)
-                                    .join('；')}
+                                  <div>{row.shared_unknowns.join('；') || '暂无已记录的证据缺口'}</div>
+                                  <div>{row.governance_reasons.join('；')}</div>
+                                  {row.decision_eligible && row.alternative_advantages.length > 0 && (
+                                    <div>{row.alternative_advantages.join('；')}</div>
+                                  )}
                                 </td>
                               </tr>
                             ))}

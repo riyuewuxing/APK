@@ -381,6 +381,19 @@ async function main() {
   await page.locator('[data-testid="debate-perspective-OPPORTUNITY_COST"]').waitFor({ state: 'visible', timeout: 8000 });
   await visit('/expert#debate', '01c_expert_debate.png');
 
+  await page.goto(`${args.baseUrl}/expert?symbol=600900&tab=opportunity`, { waitUntil: 'domcontentloaded' });
+  const pendingComparison = page.locator('tr').filter({hasText: '[DEMO] 等待情景'});
+  await pendingComparison.getByText('仅研究候选', {exact: true}).waitFor({state: 'visible', timeout: 8000});
+  await pendingComparison.getByText('[DEMO] 比较期限未核验', {exact: true}).waitFor({state: 'visible', timeout: 8000});
+  await pendingComparison.getByText('[DEMO] 缺独立证据', {exact: true}).waitFor({state: 'visible', timeout: 8000});
+  if (await pendingComparison.getByText('[DEMO] 不应展示的旧优势', {exact: true}).count()) {
+    throw new Error('unadmitted comparison displayed an unsupported advantage');
+  }
+  const verifiedComparison = page.locator('tr').filter({hasText: '沪深300ETF(基准)'});
+  await verifiedComparison.getByText('已核验可比', {exact: true}).waitFor({state: 'visible', timeout: 8000});
+  await verifiedComparison.getByText('单标的波动风险更低', {exact: true}).waitFor({state: 'visible', timeout: 8000});
+  console.log('Synthetic comparison UI: gaps visible, unadmitted advantage withheld, admitted row retained');
+
   await page.goto(`${args.baseUrl}/expert?symbol=600900&tab=backtest`, { waitUntil: 'domcontentloaded' });
   const cashResearch = page.getByTestId('cash-execution-research');
   await cashResearch.getByText('[DEMO] 合成UI测试，非真实成交').waitFor({state: 'visible', timeout: 8000});

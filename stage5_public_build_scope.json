@@ -1,8 +1,8 @@
 {
   "schema": "stage5_reviewed_public_projection_v1",
-  "private_source_commit": "d1d96016235aeb77a22f4b82640ca5c402b8f6bb",
-  "public_base_commit": "6ac24b65ebb0905a805e210641b221f3c7b630ba",
-  "scope": "Mixed-source cumulative reviewed public frontend projection; this revision projects only public-safe cache isolation, bounded HTTP, and read-only review freshness. No private backend, account records, credentials or full private parity.",
+  "private_source_commit": "3e5ce47f6a9cf6c51d8fb93a6932e0b7e508c265",
+  "public_base_commit": "89d877d49dcfc4d17f2a5901463cea9fc6cbacc6",
+  "scope": "Mixed-source reviewed public read-only frontend projection: pairing cache isolation, evidence freshness, and explicit unreviewed comparison gaps. Mock comparison rows are synthetic; no private account or backend records, credentials or full private parity.",
   "files": [
     {
       "path": ".github/workflows/build-apk.yml",
@@ -12,13 +12,15 @@
     },
     {
       "path": "e2e/mock_server.py",
-      "public_blob_sha": "83cba2bfec06a369baa6d0f3ed4e1fcf02639bcd",
-      "source_commit": "4550f18a6289fe5ccc57f953ea92130e18ed8d27"
+      "public_blob_sha": "71d10448cca2d49b18c3557e94f817ccb497e6ba",
+      "source_commit": null,
+      "projection_kind": "PUBLIC_ONLY_SYNTHETIC_TEST"
     },
     {
       "path": "e2e/verify_playwright_mobile.mjs",
-      "public_blob_sha": "b73c376d730c5f2475786cc4de66019ecc102f38",
-      "source_commit": "4550f18a6289fe5ccc57f953ea92130e18ed8d27"
+      "public_blob_sha": "da171a3cf2e5bedb2c500e0eb16ded48d78dacb6",
+      "source_commit": null,
+      "projection_kind": "PUBLIC_ONLY_SYNTHETIC_TEST"
     },
     {
       "path": "src/components/expert/StockExpertEvidenceCard.tsx",
@@ -39,8 +41,8 @@
     },
     {
       "path": "src/pages/ExpertWorkbench/ExpertWorkbench.tsx",
-      "public_blob_sha": "013e41efa2eb6fdf6bb1823cff513caab3974f9e",
-      "source_commit": "d1d96016235aeb77a22f4b82640ca5c402b8f6bb",
+      "public_blob_sha": "0c40a139e271e96f22ef763ec1e7fe6c4763a54c",
+      "source_commit": "3e5ce47f6a9cf6c51d8fb93a6932e0b7e508c265",
       "projection_kind": "REVIEWED_ADAPTED_SUBSET"
     },
     {
@@ -111,5 +113,5 @@
     }
   ],
   "omission": "Public shell deliberately excludes desktop paper-book editing, private AI context, account records and private backend. No claim of full private parity.",
-  "prior_projection_source_commit": "4550f18a6289fe5ccc57f953ea92130e18ed8d27"
+  "prior_projection_source_commit": "d1d96016235aeb77a22f4b82640ca5c402b8f6bb"
 }

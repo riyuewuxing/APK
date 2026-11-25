@@ -345,7 +345,20 @@ def _research_payload(subject_id: str) -> dict[str, Any]:
                 "alternative_advantages": ["单标的波动风险更低"],
                 "shared_unknowns": ["宏观需求节奏"],
                 "governance_reasons": ["双通道交叉校验完成"],
-            }
+            },
+            {
+                "alternative_id": "DEMO_WAIT",
+                "alternative_name": "[DEMO] 等待情景",
+                "alternative_kind": "CASH_OR_WAIT",
+                "thesis_quality": "WAIT_SCENARIO_UNREVIEWED",
+                "evidence_confidence": "UNKNOWN",
+                "zero_position_test": "UNVERIFIED",
+                "decision_eligible": False,
+                "candidate_advantages": [],
+                "alternative_advantages": ["[DEMO] 不应展示的旧优势"],
+                "shared_unknowns": ["[DEMO] 比较期限未核验"],
+                "governance_reasons": ["[DEMO] 缺独立证据"],
+            },
         ],
         "portfolio_correlation": {
             "as_of": "2026-11-13",
