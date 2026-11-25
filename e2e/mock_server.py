@@ -668,11 +668,13 @@ def _eod_journal_payload() -> dict[str, Any]:
     return {
         "snapshots": [
             {
-                "journal_version": 1,
+                "journal_version": 2,
+                "record_basis": "CLIENT_REFERENCE_ONLY",
+                "recorded_at": "2026-11-13T14:50:13+08:00",
                 "snapshot_id": "2026-11-13_default",
                 "trade_date": "2026-11-13",
                 "created_at": "2026-11-13T14:50:12+08:00",
-                "scheme_name": "默认尾盘稳健方案",
+                "scheme_name": "[DEMO] 参考价观察",
                 "market_regime": "GREEN",
                 "candidates": [
                     {
@@ -684,13 +686,14 @@ def _eod_journal_payload() -> dict[str, Any]:
                         "tail_30m_amount_share_pct": 24.6,
                         "vetting_status": "CLEAN",
                         "settlement": {
-                            "t1_date": "2026-11-14",
+                            "price_basis": "RAW_REFERENCE_GROSS",
+                            "t1_date": "2026-11-16",
                             "t1_open_premium_pct": 0.85,
                             "t1_high_return_pct": 2.3,
                             "t1_close_return_pct": 1.6,
-                            "t3_date": "2026-11-18",
-                            "t3_close_return_pct": 2.9,
-                            "status": "SETTLED",
+                            "t3_date": None,
+                            "t3_close_return_pct": None,
+                            "status": "PARTIAL",
                         },
                     }
                 ],
@@ -704,13 +707,18 @@ def _eod_journal_payload() -> dict[str, Any]:
             "candidate_count": 1,
             "schemes": [
                 {
-                    "scheme_name": "默认尾盘稳健方案",
+                    "scheme_name": "[DEMO] 参考价观察",
                     "overall": {
                         "sample_count": 1,
                         "settled_count": 1,
+                        "statistics_basis": "RAW_REFERENCE_GROSS_NOT_TRADE_WIN_RATE",
+                        "legacy_excluded_count": 0,
+                        "t1_open_observation_count": 1,
+                        "t1_close_observation_count": 1,
+                        "t3_close_observation_count": 0,
                         "t1_open_win_rate_pct": 100.0,
                         "t1_close_win_rate_pct": 100.0,
-                        "t3_close_win_rate_pct": 100.0,
+                        "t3_close_win_rate_pct": None,
                         "avg_open_premium_pct": 0.85,
                         "profit_loss_ratio": None,
                     },
@@ -718,9 +726,14 @@ def _eod_journal_payload() -> dict[str, Any]:
                         "GREEN": {
                             "sample_count": 1,
                             "settled_count": 1,
+                        "statistics_basis": "RAW_REFERENCE_GROSS_NOT_TRADE_WIN_RATE",
+                        "legacy_excluded_count": 0,
+                        "t1_open_observation_count": 1,
+                        "t1_close_observation_count": 1,
+                        "t3_close_observation_count": 0,
                             "t1_open_win_rate_pct": 100.0,
                             "t1_close_win_rate_pct": 100.0,
-                            "t3_close_win_rate_pct": 100.0,
+                            "t3_close_win_rate_pct": None,
                             "avg_open_premium_pct": 0.85,
                             "profit_loss_ratio": None,
                         }

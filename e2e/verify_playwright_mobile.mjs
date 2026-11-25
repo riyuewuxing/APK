@@ -385,13 +385,19 @@ async function main() {
   const cashResearch = page.getByTestId('cash-execution-research');
   await cashResearch.getByText('[DEMO] 合成UI测试，非真实成交').waitFor({state: 'visible', timeout: 8000});
   await cashResearch.getByText('N/A / 0', {exact: true}).waitFor({state: 'visible', timeout: 8000});
+  await cashResearch.scrollIntoViewIfNeeded();
   await visit('/expert#cash-execution-scenario', '01d_expert_backtest.png');
+  await cashResearch.screenshot({path: path.join(outDir, '01d_cash_execution_module.png')});
+  screenshots.push({route: '/expert#cash-execution-scenario-module', file: '01d_cash_execution_module.png', scope: 'LOCATOR_SCREENSHOT'});
   await page.goto(`${args.baseUrl}/expert?symbol=300476&tab=backtest`, { waitUntil: 'domcontentloaded' });
   await cashResearch.getByText('[DEMO] 缺少完整历史交易状态').waitFor({state: 'visible', timeout: 8000});
   if (await cashResearch.getByText('模拟成交 / 阻断订单', {exact: true}).count() !== 0) {
     throw new Error('blocked cash research displayed simulated fills');
   }
+  await cashResearch.scrollIntoViewIfNeeded();
   await visit('/expert#cash-execution-blocked', '01e_expert_backtest_blocked.png');
+  await cashResearch.screenshot({path: path.join(outDir, '01e_cash_execution_blocked_module.png')});
+  screenshots.push({route: '/expert#cash-execution-blocked-module', file: '01e_cash_execution_blocked_module.png', scope: 'LOCATOR_SCREENSHOT'});
 
   await clickBottomTab(page, '市场');
   await page.locator('[data-testid="markets-selector-kr"]').click();
@@ -464,6 +470,14 @@ async function main() {
 
   await clickMoreDrawerItem(page, '尾盘选股');
   await visit('/eod-picker', '10_eod_picker.png');
+  await page.getByText('历史参考价验证', {exact: true}).click();
+  await page.getByText('方案参考价观察', {exact: true}).waitFor({state: 'visible', timeout: 8000});
+  await page.getByText('T+3 收盘上涨占比', {exact: true}).waitFor({state: 'visible', timeout: 8000});
+  await page.getByText('观察 0/1', {exact: true}).waitFor({state: 'visible', timeout: 8000});
+  const t3Card = page.getByText('T+3 收盘上涨占比', {exact: true}).locator('..');
+  await t3Card.getByText('N/A', {exact: true}).waitFor({state: 'visible', timeout: 8000});
+  await page.getByText('方案参考价观察', {exact: true}).scrollIntoViewIfNeeded();
+  await visit('/eod-picker#reference-observations', '10b_eod_reference.png');
 
   await page.goto(`${args.baseUrl}/s/sh600900`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('[aria-label="移动端主导航"]', { timeout: 15000 });

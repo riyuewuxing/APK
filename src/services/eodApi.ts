@@ -88,6 +88,7 @@ export interface EodAnalyzeCandidate {
 }
 
 export interface EodSettlement {
+  price_basis?: "LEGACY_UNVERIFIED" | "RAW_REFERENCE_GROSS";
   t1_date: string | null;
   t1_open_premium_pct: number | null;
   t1_high_return_pct: number | null;
@@ -113,6 +114,8 @@ export interface EodJournalSnapshot {
   snapshot_id: string;
   trade_date: string;
   created_at: string;
+  recorded_at?: string | null;
+  record_basis?: "LEGACY_UNVERIFIED" | "CLIENT_REFERENCE_ONLY";
   scheme_name: string;
   filters: Record<string, unknown>;
   market_regime: EodRegime;
@@ -124,6 +127,11 @@ export interface EodJournalSnapshot {
 export interface EodWinRateStats {
   sample_count: number;
   settled_count: number;
+  legacy_excluded_count?: number;
+  t1_open_observation_count?: number;
+  t1_close_observation_count?: number;
+  t3_close_observation_count?: number;
+  statistics_basis?: "RAW_REFERENCE_GROSS_NOT_TRADE_WIN_RATE";
   t1_open_win_rate_pct: number | null;
   t1_close_win_rate_pct: number | null;
   t3_close_win_rate_pct: number | null;

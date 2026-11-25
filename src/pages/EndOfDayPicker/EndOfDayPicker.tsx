@@ -59,6 +59,7 @@ import {
   type EodRegimeSnapshot,
   type EodJournalResponse,
   type EodAnalyzeItem,
+  type EodWinRateStats,
 } from '@/services/eodApi';
 import styles from './EndOfDayPicker.module.css';
 
@@ -79,6 +80,11 @@ interface RecentUsage {
 type SortField = 'changePercent' | 'timelineAboveAvgRatio' | 'turnoverRate' | 'circulatingMarketCap' | 'volumeRatio';
 type SortOrder = 'asc' | 'desc';
 type EodTab = 'screen' | 'history';
+
+function rawReferencePct(stats: EodWinRateStats, value: number | null, digits: number): string {
+  return stats.statistics_basis === 'RAW_REFERENCE_GROSS_NOT_TRADE_WIN_RATE'
+    && value != null && Number.isFinite(value) ? value.toFixed(digits) + '%' : 'N/A';
+}
 
 // ========== 常量 ==========
 
@@ -878,12 +884,16 @@ export function EndOfDayPicker() {
       toast.warning('请先筛选出候选股票');
       return;
     }
-    const tradeDate = regime?.trade_date ?? new Date().toISOString().slice(0, 10);
+    const tradeDate = regime?.trade_date;
+    if (!tradeDate) {
+      toast.warning("缺少明确交易日，不能记录候选快照");
+      return;
+    }
     const schemeName = activeSchemeName.trim() || '默认尾盘方案';
     const stamp = Date.now();
     try {
       const written = await postEodJournalRecord({
-        journal_version: 1,
+        journal_version: 2,
         snapshot_id: `${tradeDate}_${stamp}`,
         trade_date: tradeDate,
         created_at: new Date().toISOString(),
@@ -907,7 +917,7 @@ export function EndOfDayPicker() {
         execution_allowed: false,
       });
       if (written.written) {
-        toast.success(`已记录快照「${schemeName}」至胜率账本`);
+        toast.success(`已记录参考快照「${schemeName}」（非正式预测）`);
       } else {
         toast.info('该快照已存在，未重复写入');
       }
@@ -1033,7 +1043,7 @@ export function EndOfDayPicker() {
             className={`${styles.tabBtn} ${activeTab === 'history' ? styles.tabActive : ''}`}
             onClick={() => handleTabChange('history')}
           >
-            历史验证与方案胜率
+            历史参考价验证
           </button>
         </div>
 
@@ -1042,9 +1052,9 @@ export function EndOfDayPicker() {
           <div className={styles.historyPanel}>
             <div className={styles.historyHeader}>
               <div>
-                <h2 className={styles.historyTitle}>方案胜率验证</h2>
+                <h2 className={styles.historyTitle}>方案参考价观察</h2>
                 <p className={styles.historyHint}>
-                  基于仓外账本的 T+1 / T+3 真实收益回填，按方案与情绪灯分层对照。仅研究统计，非收益承诺。
+                  仅比较筛选参考价与 T+1/T+3 已完成日线的未复权价格。未计成本及公司行为，不代表真实成交、投资收益或前瞻预测准确率；旧口径数据不混算。
                 </p>
               </div>
               <button
@@ -1063,7 +1073,7 @@ export function EndOfDayPicker() {
               <div className={styles.noResults}>
                 <FolderOpen size={48} strokeWidth={1} />
                 <p className={styles.noResultsTitle}>暂无历史快照</p>
-                <p className={styles.noResultsHint}>在「尾盘筛选与安检」页记录快照后，待 T+1 / T+3 数据到位即可在此查看胜率。</p>
+                <p className={styles.noResultsHint}>在「尾盘筛选与安检」页记录快照后，待 T+1 / T+3 完整日线到位即可查看参考价观察。</p>
               </div>
             ) : (
               <>
@@ -1076,23 +1086,26 @@ export function EndOfDayPicker() {
                   {journal.stats.schemes.map((scheme) => (
                     <div key={scheme.scheme_name} className={styles.schemeStatCard}>
                       <h3 className={styles.schemeStatName}>{scheme.scheme_name}</h3>
+                      <p className={styles.historyHint}>旧口径排除：{scheme.overall.legacy_excluded_count ?? "未核实"}；未观察样本不按零计。</p>
                       <div className={styles.winRateGrid}>
                         <div className={styles.winRateItem}>
-                          <span>T+1 开盘胜率</span>
-                          <strong>{formatNumber(scheme.overall.t1_open_win_rate_pct, 1)}%</strong>
-                          <small>样本 {scheme.overall.settled_count}/{scheme.overall.sample_count}</small>
+                          <span>T+1 开盘上涨占比</span>
+                          <strong>{rawReferencePct(scheme.overall, scheme.overall.t1_open_win_rate_pct, 1)}</strong>
+                          <small>观察 {scheme.overall.t1_open_observation_count ?? 0}/{scheme.overall.sample_count}</small>
                         </div>
                         <div className={styles.winRateItem}>
-                          <span>T+1 收盘胜率</span>
-                          <strong>{formatNumber(scheme.overall.t1_close_win_rate_pct, 1)}%</strong>
+                          <span>T+1 收盘上涨占比</span>
+                          <strong>{rawReferencePct(scheme.overall, scheme.overall.t1_close_win_rate_pct, 1)}</strong>
+                          <small>观察 {scheme.overall.t1_close_observation_count ?? 0}/{scheme.overall.sample_count}</small>
                         </div>
                         <div className={styles.winRateItem}>
-                          <span>T+3 收盘胜率</span>
-                          <strong>{formatNumber(scheme.overall.t3_close_win_rate_pct, 1)}%</strong>
+                          <span>T+3 收盘上涨占比</span>
+                          <strong>{rawReferencePct(scheme.overall, scheme.overall.t3_close_win_rate_pct, 1)}</strong>
+                          <small>观察 {scheme.overall.t3_close_observation_count ?? 0}/{scheme.overall.sample_count}</small>
                         </div>
                         <div className={styles.winRateItem}>
                           <span>平均开盘溢价</span>
-                          <strong>{formatNumber(scheme.overall.avg_open_premium_pct, 2)}%</strong>
+                          <strong>{rawReferencePct(scheme.overall, scheme.overall.avg_open_premium_pct, 2)}</strong>
                         </div>
                       </div>
                       {Object.keys(scheme.by_regime).length > 0 && (
@@ -1100,7 +1113,7 @@ export function EndOfDayPicker() {
                           <span className={styles.breakdownLabel}>按情绪分层：</span>
                           {Object.entries(scheme.by_regime).map(([r, st]) => (
                             <span key={r} className={styles.breakdownItem}>
-                              {REGIME_LABEL[r]?.text ?? r} T+1开盘 {formatNumber(st.t1_open_win_rate_pct, 0)}%
+                              {REGIME_LABEL[r]?.text ?? r} T+1开盘 {rawReferencePct(st, st.t1_open_win_rate_pct, 0)}
                             </span>
                           ))}
                         </div>
@@ -1661,7 +1674,7 @@ export function EndOfDayPicker() {
                         <Zap size={16} />
                         {vettingBusy ? '校验中…' : '批量排雷与结构校验'}
                       </button>
-                      <button className={styles.recordBtn} onClick={handleRecordSnapshot} title="写入仓外胜率账本">
+                      <button className={styles.recordBtn} onClick={handleRecordSnapshot} title="写入仓外参考观察账本">
                         <Save size={16} />
                         记录快照
                       </button>
