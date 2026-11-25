@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   clearMobileConnectionConfig,
+  getMobileCacheScope,
   parsePairingCode,
   saveMobileConnectionConfig,
 } from '@/platform/runtime';
@@ -10,7 +11,7 @@ import {
   resetApiClientState,
   resolveActiveBackendBase,
 } from './apiClient';
-import { clearOfflineSnapshots, readOfflineSnapshot } from './offlineCache';
+import { clearOfflineSnapshots, readOfflineSnapshot, writeOfflineSnapshot } from './offlineCache';
 
 function createMemoryStorage(): Storage {
   const store = new Map<string, string>();
@@ -54,6 +55,7 @@ describe('apiClient dual-channel routing & offline cache', () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.restoreAllMocks();
     vi.unstubAllGlobals();
   });
@@ -73,6 +75,29 @@ describe('apiClient dual-channel routing & offline cache', () => {
     expect(data.research_only).toBe(true);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0]?.[0]).toBe('/api/workbench');
+  });
+
+  it('aborts a same-origin request at its configured timeout with a readable error', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((_url: string, init?: RequestInit) =>
+        new Promise((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            reject(new DOMException('The operation was aborted.', 'AbortError'));
+          });
+        })
+      )
+    );
+
+    const pending = apiRequestJson('/api/slow', { fallbackToCache: false, timeoutMs: 250 });
+    const rejection = expect(pending).rejects.toMatchObject({
+      name: 'TimeoutError',
+      message: expect.stringContaining('请求超时'),
+    });
+    await vi.advanceTimersByTimeAsync(250);
+    await rejection;
+    vi.useRealTimers();
   });
 
   it('prefers LAN channel, fails over to Tailscale remote, and falls back to offline snapshot', async () => {
@@ -138,7 +163,9 @@ describe('apiClient dual-channel routing & offline cache', () => {
       vi.fn().mockRejectedValue(new Error('network offline'))
     );
 
-    const cachedWb = await apiRequestJson<{ account_tag: string }>('/api/workbench');
+    const onCacheFallback = vi.fn();
+    const cachedWb = await apiRequestJson<{ account_tag: string }>('/api/workbench', { onCacheFallback });
+    expect(onCacheFallback).toHaveBeenCalledOnce();
     expect(cachedWb.account_tag).toBe('cached_workbench_payload');
     expect(getBackendStatusSnapshot().channel).toBe('offline');
     expect(getBackendStatusSnapshot().offlineSnapshotFetchedAt).toBeTruthy();
@@ -146,6 +173,47 @@ describe('apiClient dual-channel routing & offline cache', () => {
     await expect(apiRequestJson('/api/research/999999')).rejects.toThrow(
       /电脑后端离线，暂无该标的缓存研判/
     );
+  });
+
+  it.each([401, 403])('does not return a cached payload after HTTP %s', async status => {
+    saveMobileConnectionConfig({ lanUrl: 'https://fixture.example', deviceToken: 'synthetic-token-A-00000000' });
+    writeOfflineSnapshot('/api/workbench', { privateFixture: 'old' }, { sourceUrl: 'https://fixture.example/api/workbench' });
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => url.endsWith('/api/health')
+      ? { ok: true, status: 200, json: async () => ({ status: 'ok' }) }
+      : { ok: false, status, text: async () => 'denied' }));
+    await expect(apiRequestJson('/api/workbench')).rejects.toMatchObject({ name: 'AuthError', status });
+    expect(readOfflineSnapshot('/api/workbench')).toBeNull();
+  });
+
+  it('isolates cache even for different tokens with an identical suffix and never reuses an old host', async () => {
+    const cfgA = saveMobileConnectionConfig({ lanUrl: 'https://alpha.example', deviceToken: 'synthetic-token-A-00000000' });
+    const scopeA = getMobileCacheScope(cfgA);
+    writeOfflineSnapshot('/api/workbench', { privateFixture: 'A' }, { sourceUrl: 'https://alpha.example/api/workbench' });
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.endsWith('/api/health')) return { ok: true, status: 200, json: async () => ({ status: 'ok' }) };
+      expect(url).toBe('https://beta.example/api/workbench');
+      expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer synthetic-token-B-00000000');
+      return { ok: true, status: 200, json: async () => ({ privateFixture: 'B' }) };
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    expect((await resolveActiveBackendBase()).baseUrl).toBe('https://alpha.example');
+    const sameHostNewToken = saveMobileConnectionConfig({ deviceToken: 'synthetic-token-B-00000000' });
+    expect(getMobileCacheScope(sameHostNewToken)).not.toBe(scopeA);
+    expect(readOfflineSnapshot('/api/workbench')).toBeNull();
+    saveMobileConnectionConfig({ lanUrl: 'https://beta.example' });
+    expect(await apiRequestJson('/api/workbench')).toEqual({ privateFixture: 'B' });
+    expect(fetchMock.mock.calls.some(([url]) => url === 'https://beta.example/api/health')).toBe(true);
+  });
+
+  it('discards a response arriving after a pairing switch', async () => {
+    saveMobileConnectionConfig({ lanUrl: 'https://alpha.example', deviceToken: 'synthetic-token-A-00000000' });
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => {
+      if (url.endsWith('/api/health')) return { ok: true, status: 200, json: async () => ({ status: 'ok' }) };
+      saveMobileConnectionConfig({ lanUrl: 'https://beta.example', deviceToken: 'synthetic-token-B-00000000' });
+      return { ok: true, status: 200, json: async () => ({ privateFixture: 'A' }) };
+    }));
+    await expect(apiRequestJson('/api/workbench')).rejects.toMatchObject({ name: 'PairingChangedError' });
+    expect(readOfflineSnapshot('/api/workbench')).toBeNull();
   });
 
   it('parses valid Base64 pairing codes and rejects malformed tokens', () => {

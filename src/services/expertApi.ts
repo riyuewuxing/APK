@@ -270,6 +270,7 @@ export interface OrthogonalDecisionPacket {
   action_label_zh: string;
   research_action?: DecisionAction | null;
   admission_state?: 'ADMITTED' | 'NOT_ADMITTED' | 'LEGACY_UNVERIFIED';
+  admission_blockers?: string[];
   supporting_clusters_count: number;
   contradicting_clusters_count: number;
   unknown_clusters_count: number;
@@ -439,6 +440,32 @@ export interface CashExecutionResearch {
   execution_allowed: false;
 }
 
+export interface ResearchPriceBand {
+  low_cny: number;
+  high_cny: number;
+}
+
+export interface ResearchPlaybook {
+  status: 'UNAVAILABLE' | 'BLOCKED' | 'REFERENCE_ONLY' | 'CONDITIONAL_RESEARCH' | 'NOT_APPLICABLE';
+  reason: string;
+  subject_id: string;
+  research_direction: string;
+  reference_session?: string | null;
+  reference_close_cny?: number | null;
+  observed_at?: string | null;
+  reference_band?: ResearchPriceBand | null;
+  candidate_band?: ResearchPriceBand | null;
+  valid_from?: string | null;
+  valid_until?: string | null;
+  confirmation_conditions: string[];
+  invalidation_conditions: string[];
+  counterevidence: string[];
+  cost_assumptions: Record<string, number | string>;
+  evidence_hashes: Record<string, string>;
+  research_only: true;
+  execution_allowed: false;
+}
+
 export interface DeepResearchCard {
   subject_id: string;
   subject_name: string;
@@ -457,6 +484,9 @@ export interface DeepResearchCard {
   kline_origin?: string;
   backtest_summary: BacktestSummaryViewModel | null;
   cash_execution_summary?: CashExecutionResearch | null;
+  research_playbook?: ResearchPlaybook | null;
+  subject_review_status?: string | null;
+  subject_review_valid_until?: string | null;
   audit_claims: ClaimAuditRow[];
   header_badge: ProvenanceBadge;
   research_only: boolean;
@@ -720,17 +750,62 @@ export function fetchWorkbench(signal?: AbortSignal): Promise<WorkbenchState> {
   return requestJson<WorkbenchState>('/api/workbench', { signal });
 }
 
-export function fetchResearchCard(
+export function guardSubjectReview(card: DeepResearchCard, now: number, responseFresh: boolean): DeepResearchCard {
+  if (card.subject_review_status !== 'REVIEW_VERIFIED' && card.subject_review_status !== 'REVIEW_GAPS') return card;
+  const expiry = Date.parse(card.subject_review_valid_until ?? '');
+  if (responseFresh && Number.isFinite(expiry) && expiry > now) return card;
+  const packet = card.decision_packet;
+  return {
+    ...card,
+    subject_review_status: 'SUBJECT_REVIEW_REFRESH_REQUIRED',
+    audit_claims: [],
+    opportunity_cost_matrix: [],
+    research_playbook: card.research_playbook ? {
+      ...card.research_playbook,
+      status: card.research_playbook.reference_band ? 'REFERENCE_ONLY' : 'BLOCKED',
+      reason: '独立审查失效；仅保留原历史价格参考，撤回方向性价带',
+      research_direction: 'WAIT',
+      candidate_band: null,
+      valid_from: null,
+      valid_until: null,
+      counterevidence: ['独立审查已失效'],
+      confirmation_conditions: [],
+      invalidation_conditions: [],
+    } : card.research_playbook,
+    decision_packet: {
+      ...packet,
+      admission_state: 'NOT_ADMITTED',
+      action: packet.action === 'INSUFFICIENT_EVIDENCE' ? packet.action : 'WAIT',
+      action_label_zh: packet.action === 'INSUFFICIENT_EVIDENCE' ? packet.action_label_zh : '等待',
+      admission_blockers: [...(packet.admission_blockers ?? []), 'SUBJECT_REVIEW_REFRESH_OR_EXPIRY_REQUIRED'],
+      research_action: null,
+      supporting_clusters_count: 0,
+      contradicting_clusters_count: 0,
+      unknown_clusters_count: 5,
+      composite_conviction_score: 0,
+      supporting_reasons: [],
+      counter_reasons: ['独立审查已失效；旧证据不能用于当前方向判断'],
+      red_flag_blockers: [],
+      unresolved_gaps: ['重新核验当前标的及独立证据'],
+      change_triggers: ['重新获取当前观察并完成独立审查'],
+      cluster_votes: [],
+    },
+  };
+}
+
+export async function fetchResearchCard(
   subjectId: string,
   signal?: AbortSignal,
   assetType?: string
 ): Promise<DeepResearchCard> {
   const normalized = normalizeResearchSubjectId(subjectId);
   const query = assetType ? `?asset_type=${encodeURIComponent(assetType)}` : '';
-  return requestJson<DeepResearchCard>(
+  let responseFresh = true;
+  const card = await apiRequestJson<DeepResearchCard>(
     `/api/research/${encodeURIComponent(normalized)}${query}`,
-    { signal }
+    { signal, onCacheFallback: () => { responseFresh = false; } }
   );
+  return guardSubjectReview(card, Date.now(), responseFresh);
 }
 
 export function fetchRadar(signal?: AbortSignal): Promise<RadarState> {

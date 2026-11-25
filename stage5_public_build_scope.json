@@ -1,61 +1,115 @@
 {
   "schema": "stage5_reviewed_public_projection_v1",
-  "private_source_commit": "4550f18a6289fe5ccc57f953ea92130e18ed8d27",
-  "public_base_commit": "fab9711b4a8f28694b4559739a248bb1fbc49b83",
-  "scope": "Cumulative reviewed frontend projection, adapted for read-only public shell; synthetic UI fixture only. No private backend or account records.",
+  "private_source_commit": "d1d96016235aeb77a22f4b82640ca5c402b8f6bb",
+  "public_base_commit": "6ac24b65ebb0905a805e210641b221f3c7b630ba",
+  "scope": "Mixed-source cumulative reviewed public frontend projection; this revision projects only public-safe cache isolation, bounded HTTP, and read-only review freshness. No private backend, account records, credentials or full private parity.",
   "files": [
     {
       "path": ".github/workflows/build-apk.yml",
-      "public_blob_sha": "44174525a6e68e8cfce34228d7ddfbf5123a8a69"
+      "public_blob_sha": "db98e5da3afaefffd17938d684784d5e0d40543d",
+      "source_commit": null,
+      "projection_kind": "PUBLIC_ONLY"
     },
     {
       "path": "e2e/mock_server.py",
-      "public_blob_sha": "83cba2bfec06a369baa6d0f3ed4e1fcf02639bcd"
+      "public_blob_sha": "83cba2bfec06a369baa6d0f3ed4e1fcf02639bcd",
+      "source_commit": "4550f18a6289fe5ccc57f953ea92130e18ed8d27"
     },
     {
       "path": "e2e/verify_playwright_mobile.mjs",
-      "public_blob_sha": "b73c376d730c5f2475786cc4de66019ecc102f38"
+      "public_blob_sha": "b73c376d730c5f2475786cc4de66019ecc102f38",
+      "source_commit": "4550f18a6289fe5ccc57f953ea92130e18ed8d27"
     },
     {
       "path": "src/components/expert/StockExpertEvidenceCard.tsx",
-      "public_blob_sha": "3f47bb53921c731890a5ad9e87beda8fa1a6bd38"
+      "public_blob_sha": "2751993432114a71c943a8b56beb0ad630533ff8",
+      "source_commit": "d1d96016235aeb77a22f4b82640ca5c402b8f6bb",
+      "projection_kind": "REVIEWED_ADAPTED_SUBSET"
+    },
+    {
+      "path": "src/hooks/useGuardedSubjectReview.ts",
+      "public_blob_sha": "f1645527aee506843ec2c594390b7577cf8b543e",
+      "source_commit": null,
+      "projection_kind": "PUBLIC_ONLY"
     },
     {
       "path": "src/pages/EndOfDayPicker/EndOfDayPicker.tsx",
-      "public_blob_sha": "2e74539a45c2789d7a9eebf856ea5c0f7f72b3a3"
+      "public_blob_sha": "2e74539a45c2789d7a9eebf856ea5c0f7f72b3a3",
+      "source_commit": "4550f18a6289fe5ccc57f953ea92130e18ed8d27"
     },
     {
       "path": "src/pages/ExpertWorkbench/ExpertWorkbench.tsx",
-      "public_blob_sha": "410ecdf7141cd5708f32b888d71a85355c2e2e92"
+      "public_blob_sha": "013e41efa2eb6fdf6bb1823cff513caab3974f9e",
+      "source_commit": "d1d96016235aeb77a22f4b82640ca5c402b8f6bb",
+      "projection_kind": "REVIEWED_ADAPTED_SUBSET"
     },
     {
       "path": "src/pages/Watchlist/WatchlistResearchDock.tsx",
-      "public_blob_sha": "1b12f2de26d0cba8fc643207629e3236b6a1ea13"
+      "public_blob_sha": "1b12f2de26d0cba8fc643207629e3236b6a1ea13",
+      "source_commit": "4550f18a6289fe5ccc57f953ea92130e18ed8d27"
+    },
+    {
+      "path": "src/platform/runtime.ts",
+      "public_blob_sha": "ddc70c8cb105759224c509ba0ef194890ae9a31d",
+      "source_commit": "d1d96016235aeb77a22f4b82640ca5c402b8f6bb",
+      "projection_kind": "REVIEWED_ADAPTED_SUBSET"
     },
     {
       "path": "src/services/analysis.test.ts",
-      "public_blob_sha": "069b24a2fa5f3b2498de4004e98a5943bbadb2b1"
+      "public_blob_sha": "069b24a2fa5f3b2498de4004e98a5943bbadb2b1",
+      "source_commit": "4550f18a6289fe5ccc57f953ea92130e18ed8d27"
     },
     {
       "path": "src/services/analysis.ts",
-      "public_blob_sha": "cec92ceefca7afa989f5a290d84cc663eccbb83e"
+      "public_blob_sha": "cec92ceefca7afa989f5a290d84cc663eccbb83e",
+      "source_commit": "4550f18a6289fe5ccc57f953ea92130e18ed8d27"
+    },
+    {
+      "path": "src/services/apiClient.test.ts",
+      "public_blob_sha": "83451ae47a532261ae837524dbfbb42efb8f08ac",
+      "source_commit": "d1d96016235aeb77a22f4b82640ca5c402b8f6bb",
+      "projection_kind": "REVIEWED_ADAPTED_SUBSET"
+    },
+    {
+      "path": "src/services/apiClient.ts",
+      "public_blob_sha": "873446ad1492e70af0edecc42ce08cd5b1e35e75",
+      "source_commit": "d1d96016235aeb77a22f4b82640ca5c402b8f6bb",
+      "projection_kind": "REVIEWED_ADAPTED_SUBSET"
     },
     {
       "path": "src/services/eodApi.ts",
-      "public_blob_sha": "885aebde9f72909063a93d67d40b1b5ae4c48998"
+      "public_blob_sha": "885aebde9f72909063a93d67d40b1b5ae4c48998",
+      "source_commit": "4550f18a6289fe5ccc57f953ea92130e18ed8d27"
+    },
+    {
+      "path": "src/services/expertApi.test.ts",
+      "public_blob_sha": "4bc45c296d65d88d3d78076e91242ed815ac625c",
+      "source_commit": "d1d96016235aeb77a22f4b82640ca5c402b8f6bb",
+      "projection_kind": "EXACT_REVIEWED_SOURCE"
     },
     {
       "path": "src/services/expertApi.ts",
-      "public_blob_sha": "2e761d0cb35c30635bd7c114994b624e30d3b6b3"
+      "public_blob_sha": "b39cbf816d5020133754b8e1846cc9f8feaafb07",
+      "source_commit": "d1d96016235aeb77a22f4b82640ca5c402b8f6bb",
+      "projection_kind": "REVIEWED_ADAPTED_SUBSET"
+    },
+    {
+      "path": "src/services/offlineCache.ts",
+      "public_blob_sha": "697742694a15e5d2181ec6651be38363ef7d518d",
+      "source_commit": "d1d96016235aeb77a22f4b82640ca5c402b8f6bb",
+      "projection_kind": "EXACT_REVIEWED_SOURCE"
     },
     {
       "path": "src/services/researchAdvApi.ts",
-      "public_blob_sha": "280ecf401f348646b9ed5af368badd80c605177f"
+      "public_blob_sha": "280ecf401f348646b9ed5af368badd80c605177f",
+      "source_commit": "4550f18a6289fe5ccc57f953ea92130e18ed8d27"
     },
     {
       "path": "src/services/xrayApi.ts",
-      "public_blob_sha": "4112065b32b3b452291371c35a9cf52d3d00823e"
+      "public_blob_sha": "4112065b32b3b452291371c35a9cf52d3d00823e",
+      "source_commit": "4550f18a6289fe5ccc57f953ea92130e18ed8d27"
     }
   ],
-  "omission": "Public shell deliberately excludes desktop paper-book editing, private AI context, account records and private backend. No claim of full private parity."
+  "omission": "Public shell deliberately excludes desktop paper-book editing, private AI context, account records and private backend. No claim of full private parity.",
+  "prior_projection_source_commit": "4550f18a6289fe5ccc57f953ea92130e18ed8d27"
 }

@@ -5,16 +5,27 @@
  */
 
 import {
+  getMobileCacheScope,
   getMobileConnectionConfig,
   hasConfiguredRemoteBackend,
   isNativeApp,
 } from '@/platform/runtime';
 import {
+  clearOfflineSnapshots,
   getLatestOfflineSnapshotTime,
   isCacheableExpertEndpoint,
   readOfflineSnapshot,
   writeOfflineSnapshot,
 } from './offlineCache';
+
+class HttpStatusError extends Error {
+  status: number;
+  constructor(status: number, message: string, isAuth = false) {
+    super(message);
+    this.status = status;
+    this.name = isAuth ? 'AuthError' : 'HttpStatusError';
+  }
+}
 
 export type BackendChannel = 'same_origin' | 'lan' | 'remote' | 'offline';
 
@@ -35,11 +46,61 @@ export interface ChannelProbeResult {
   error: string | null;
 }
 
+class PairingChangedError extends Error {
+  constructor() {
+    super('设备配对已变更，丢弃旧请求并重新连接');
+    this.name = 'PairingChangedError';
+  }
+}
+
+function assertPairingScope(scope: string): void {
+  if (getMobileCacheScope() !== scope) throw new PairingChangedError();
+}
+
 const CHANNEL_CACHE_TTL_MS = 30_000;
 const LAN_PROBE_TIMEOUT_MS = 1200;
 const REMOTE_PROBE_TIMEOUT_MS = 2500;
+const DEFAULT_REQUEST_TIMEOUT_MS = 20_000;
+const HEAVY_REQUEST_TIMEOUT_MS = 60_000;
+
+function requestTimeoutForPath(path: string): number {
+  return /\/api\/(?:research\/|quantstats\/tearsheet|eod\/analyze-vetting|market\/pit-sync\?sync=true)/i.test(
+    path
+  )
+    ? HEAVY_REQUEST_TIMEOUT_MS
+    : DEFAULT_REQUEST_TIMEOUT_MS;
+}
+
+function createRequestSignal(path: string, signal: AbortSignal | null | undefined, timeoutMs: number) {
+  const controller = new AbortController();
+  let didTimeout = false;
+  const abortFromCaller = () => controller.abort();
+  if (signal?.aborted) {
+    controller.abort();
+  } else {
+    signal?.addEventListener('abort', abortFromCaller, { once: true });
+  }
+  const timer = setTimeout(() => {
+    didTimeout = true;
+    controller.abort();
+  }, timeoutMs);
+  return {
+    signal: controller.signal,
+    didTimeout: () => didTimeout,
+    dispose: () => {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', abortFromCaller);
+    },
+    timeoutError: () => {
+      const error = new Error(`请求超时（${Math.ceil(timeoutMs / 1000)} 秒）：${path}`);
+      error.name = 'TimeoutError';
+      return error;
+    },
+  };
+}
 
 let cachedChannel: {
+  scope: string;
   baseUrl: string;
   channel: BackendChannel;
   expiresAt: number;
@@ -162,22 +223,24 @@ export async function resolveActiveBackendBase(forceRefresh = false): Promise<{
   baseUrl: string;
   channel: BackendChannel;
 }> {
-  if (!shouldUseRemoteDualChannel()) {
+  const cfg = getMobileConnectionConfig();
+  const scope = getMobileCacheScope(cfg);
+  if (!isNativeApp() && !hasConfiguredRemoteBackend(cfg)) {
     return { baseUrl: '', channel: 'same_origin' };
   }
 
   const now = Date.now();
-  if (!forceRefresh && cachedChannel && now < cachedChannel.expiresAt) {
+  if (!forceRefresh && cachedChannel?.scope === scope && now < cachedChannel.expiresAt) {
     return { baseUrl: cachedChannel.baseUrl, channel: cachedChannel.channel };
   }
-
-  const cfg = getMobileConnectionConfig();
   const checkedAt = new Date().toISOString();
 
   if (cfg.lanUrl) {
     const lanProbe = await probeBackendHealth(cfg.lanUrl, LAN_PROBE_TIMEOUT_MS);
+    assertPairingScope(scope);
     if (lanProbe.reachable) {
       cachedChannel = {
+        scope,
         baseUrl: cfg.lanUrl,
         channel: 'lan',
         expiresAt: now + CHANNEL_CACHE_TTL_MS,
@@ -200,8 +263,10 @@ export async function resolveActiveBackendBase(forceRefresh = false): Promise<{
 
   if (cfg.remoteUrl) {
     const remoteProbe = await probeBackendHealth(cfg.remoteUrl, REMOTE_PROBE_TIMEOUT_MS);
+    assertPairingScope(scope);
     if (remoteProbe.reachable) {
       cachedChannel = {
+        scope,
         baseUrl: cfg.remoteUrl,
         channel: 'remote',
         expiresAt: now + CHANNEL_CACHE_TTL_MS,
@@ -223,6 +288,7 @@ export async function resolveActiveBackendBase(forceRefresh = false): Promise<{
   }
 
   cachedChannel = {
+    scope,
     baseUrl: '',
     channel: 'offline',
     expiresAt: now + 5000,
@@ -256,18 +322,31 @@ function buildAuthHeaders(
 
 export async function apiFetch(
   path: string,
-  options?: RequestInit & { skipAuth?: boolean; forceProbe?: boolean }
+  options?: RequestInit & { skipAuth?: boolean; forceProbe?: boolean; timeoutMs?: number }
 ): Promise<{ response: Response; baseUrl: string; channel: BackendChannel }> {
-  const { skipAuth, forceProbe, ...fetchInit } = options ?? {};
+  const { skipAuth, forceProbe, timeoutMs = requestTimeoutForPath(path), ...fetchInit } = options ?? {};
+  const scope = getMobileCacheScope();
   const { channel, baseUrl } = await resolveActiveBackendBase(Boolean(forceProbe));
+  assertPairingScope(scope);
   if (channel === 'offline') {
     throw new Error('电脑后端未连接');
   }
   const url = buildApiUrl(path, baseUrl);
   const headers = buildAuthHeaders(fetchInit.headers, channel, skipAuth);
-  const finalInit: RequestInit = headers ? { ...fetchInit, headers } : fetchInit;
-  const response = await fetch(url, finalInit);
-  return { response, baseUrl, channel };
+  const requestSignal = createRequestSignal(path, fetchInit.signal, timeoutMs);
+  const finalInit: RequestInit = headers
+    ? { ...fetchInit, headers, signal: requestSignal.signal }
+    : { ...fetchInit, signal: requestSignal.signal };
+  try {
+    const response = await fetch(url, finalInit);
+    assertPairingScope(scope);
+    return { response, baseUrl, channel };
+  } catch (error) {
+    if (requestSignal.didTimeout()) throw requestSignal.timeoutError();
+    throw error;
+  } finally {
+    requestSignal.dispose();
+  }
 }
 
 export async function apiRequestJson<T>(
@@ -277,16 +356,20 @@ export async function apiRequestJson<T>(
     signal?: AbortSignal;
     fallbackToCache?: boolean;
     body?: unknown;
+    timeoutMs?: number;
+    onCacheFallback?: () => void;
   }
 ): Promise<T> {
+  const scope = getMobileCacheScope();
   const method = options?.method ?? 'GET';
   const allowCache = (options?.fallbackToCache ?? true) && method === 'GET' && isCacheableExpertEndpoint(path);
   const postHeaders =
     options?.body !== undefined ? { 'Content-Type': 'application/json' } : undefined;
 
   const tryReadCache = (fallbackReason: string): T => {
+    assertPairingScope(scope);
     if (allowCache) {
-      const snap = readOfflineSnapshot<T>(path);
+      const snap = readOfflineSnapshot<T>(path, scope);
       if (snap) {
         emitStatus({
           channel: 'offline',
@@ -294,6 +377,7 @@ export async function apiRequestJson<T>(
           offlineSnapshotFetchedAt: snap.fetched_at,
           lastError: fallbackReason,
         });
+        options?.onCacheFallback?.();
         return snap.payload;
       }
       throw new Error('电脑后端离线，暂无该标的缓存研判（实时行情仍可正常查看）');
@@ -305,31 +389,43 @@ export async function apiRequestJson<T>(
     const { response, baseUrl, channel } = await apiFetch(path, {
       method,
       signal: options?.signal,
+      timeoutMs: options?.timeoutMs,
       headers: { Accept: 'application/json', ...(postHeaders ?? {}) },
       body: options?.body !== undefined ? JSON.stringify(options.body) : undefined,
     });
 
+    assertPairingScope(scope);
     if (!response.ok) {
-      if (response.status === 401) {
-        emitStatus({ lastError: '设备配对令牌未通过鉴权（HTTP 401），请在设置页重新配对' });
+      if (response.status === 401 || response.status === 403) {
+        cachedChannel = null;
+        clearOfflineSnapshots(scope);
+        emitStatus({ lastError: `设备鉴权或访问受限（HTTP ${response.status}），已停用当前离线快照` });
       }
       const detail = await response.text().catch(() => '');
-      throw new Error(`HTTP ${response.status} (${path}): ${detail.slice(0, 160)}`);
+      throw new HttpStatusError(
+        response.status,
+        `HTTP ${response.status} (${path}): ${detail.slice(0, 160)}`,
+        response.status === 401 || response.status === 403
+      );
     }
 
     const payload = (await response.json()) as T;
+    assertPairingScope(scope);
     if (channel !== 'offline' && statusSnapshot.channel === 'offline') {
       emitStatus({ channel, activeBaseUrl: baseUrl, offlineSnapshotFetchedAt: null, lastError: null });
     }
     if (allowCache && (isNativeApp() || hasConfiguredRemoteBackend())) {
-      writeOfflineSnapshot(path, payload, { sourceUrl: buildApiUrl(path, baseUrl) });
+      writeOfflineSnapshot(path, payload, { sourceUrl: buildApiUrl(path, baseUrl), scope });
     }
     return payload;
   } catch (err) {
-    if (err instanceof Error && err.name === 'AbortError') {
+    if (err instanceof HttpStatusError || err instanceof PairingChangedError) {
       throw err;
     }
-    // 通道可能切换，清除内存通道缓存以便下次重探；若可离线读快照则回退
+    if (err instanceof Error && (err.name === 'AbortError' || err.name === 'TimeoutError')) {
+      throw err;
+    }
+    // 通道可能切换，清除内存通道缓存以便下次重探；仅真离线/网络不可达时才读取当前配对域快照
     if (shouldUseRemoteDualChannel()) {
       cachedChannel = null;
       return tryReadCache(err instanceof Error ? err.message : String(err));
@@ -340,15 +436,19 @@ export async function apiRequestJson<T>(
 
 export async function apiRequestText(
   path: string,
-  options?: { signal?: AbortSignal }
+  options?: { signal?: AbortSignal; timeoutMs?: number }
 ): Promise<string> {
+  const scope = getMobileCacheScope();
   const { response } = await apiFetch(path, {
     method: 'GET',
     signal: options?.signal,
+    timeoutMs: options?.timeoutMs,
   });
   if (!response.ok) {
     const detail = await response.text().catch(() => '');
     throw new Error(`HTTP ${response.status} (${path}): ${detail.slice(0, 160)}`);
   }
-  return await response.text();
+  const result = await response.text();
+  assertPairingScope(scope);
+  return result;
 }

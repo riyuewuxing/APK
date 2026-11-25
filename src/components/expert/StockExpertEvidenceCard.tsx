@@ -8,6 +8,7 @@ import {
   type DeepResearchCard,
 } from '@/services/expertApi';
 import { ActionDecisionPill, ProvenancePill } from './ExpertBadges';
+import { useGuardedSubjectReview } from '@/hooks/useGuardedSubjectReview';
 import styles from './StockExpertEvidenceCard.module.css';
 
 interface StockExpertEvidenceCardProps {
@@ -44,7 +45,7 @@ export function StockExpertEvidenceCard({ stockCode }: StockExpertEvidenceCardPr
   }, [stockCode]);
 
   const loading = state.targetCode !== stockCode;
-  const card = state.targetCode === stockCode ? state.card : null;
+  const card = useGuardedSubjectReview(state.targetCode === stockCode ? state.card : null);
   const errorMsg = state.targetCode === stockCode ? state.errorMsg : null;
 
   const handleNativeKline = async () => {
@@ -94,19 +95,19 @@ export function StockExpertEvidenceCard({ stockCode }: StockExpertEvidenceCardPr
               <div className={styles.fzmTile}>
                 <span className={styles.fzmLabel}>ValueInvest F</span>
                 <span className={styles.fzmValue}>
-                  {card.turnaround_report.piotroski_f_score} / 9
+                  {card.turnaround_report.piotroski_f_score == null ? '未核验' : `${card.turnaround_report.piotroski_f_score} / 9`}
                 </span>
               </div>
               <div className={styles.fzmTile}>
                 <span className={styles.fzmLabel}>Altman Z</span>
                 <span className={styles.fzmValue}>
-                  {card.turnaround_report.altman_z_score.toFixed(2)}
+                  {card.turnaround_report.altman_z_score?.toFixed(2) ?? '未核验'}
                 </span>
               </div>
               <div className={styles.fzmTile}>
                 <span className={styles.fzmLabel}>Beneish M</span>
                 <span className={styles.fzmValue}>
-                  {card.turnaround_report.beneish_m_score.toFixed(2)}
+                  {card.turnaround_report.beneish_m_score?.toFixed(2) ?? '未核验'}
                 </span>
               </div>
             </div>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useGuardedSubjectReview } from '@/hooks/useGuardedSubjectReview';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
@@ -362,8 +363,9 @@ export function ExpertWorkbench() {
 
   const researchLoading = researchState.subjectId !== activeRequestKey;
   const researchSnapshotMismatch = Boolean(activeAccountSnapshotId && researchState.card && researchState.card.account_snapshot_id !== activeAccountSnapshotId);
-  const researchCard =
-    researchState.subjectId === activeRequestKey && !accountBlocked && !researchSnapshotMismatch ? researchState.card : null;
+  const researchCard = useGuardedSubjectReview(
+    researchState.subjectId === activeRequestKey && !accountBlocked && !researchSnapshotMismatch ? researchState.card : null
+  );
   const researchError = accountBlocked ? '当前台账损坏，已阻断账户相关研判'
     : researchSnapshotMismatch ? '研究卡与账户快照不一致，请刷新工作台'
     : researchState.subjectId === activeRequestKey ? researchState.error : null;

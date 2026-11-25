@@ -107,6 +107,23 @@ export function hasConfiguredRemoteBackend(config?: MobileConnectionConfig): boo
   return Boolean(cfg.lanUrl || cfg.remoteUrl);
 }
 
+/**
+ * Derive a stable, non-secret cache namespace for the currently paired host + token.
+ */
+export function getMobileCacheScope(config?: MobileConnectionConfig): string {
+  const cfg = config ?? getMobileConnectionConfig();
+  if (!isNativeApp() && !hasConfiguredRemoteBackend(cfg)) {
+    return 'local';
+  }
+  const raw = JSON.stringify([cfg.lanUrl, cfg.remoteUrl, cfg.deviceToken]);
+  let hash = 2166136261;
+  for (let i = 0; i < raw.length; i += 1) {
+    hash ^= raw.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `host_v2_${(hash >>> 0).toString(16)}`;
+}
+
 function decodeBase64Utf8(raw: string): string {
   const normalized = raw.trim().replace(/-/g, '+').replace(/_/g, '/');
   const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');

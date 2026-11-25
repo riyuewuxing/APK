@@ -4,8 +4,11 @@
  * 电脑关机或不可达时显式返回带 fetched_at 时间戳的只读缓存快照（绝不伪造实时数据）。
  */
 
+import { getMobileCacheScope } from '@/platform/runtime';
+
 export interface OfflineSnapshotEntry<T = unknown> {
   key: string;
+  scope?: string;
   payload: T;
   fetched_at: string;
   backend_commit: string | null;
@@ -44,6 +47,10 @@ export function isCacheableExpertEndpoint(path: string): boolean {
   );
 }
 
+function scopedSnapshotStorageKey(key: string, scope = getMobileCacheScope()): string {
+  return `${SNAPSHOT_PREFIX}${scope}:${key}`;
+}
+
 export function writeOfflineSnapshot<T>(
   key: string,
   payload: T,
@@ -51,10 +58,13 @@ export function writeOfflineSnapshot<T>(
     sourceUrl: string;
     backendCommit?: string | null;
     fetchedAt?: string;
+    scope?: string;
   }
 ): OfflineSnapshotEntry<T> {
+  const scope = meta.scope ?? getMobileCacheScope();
   const entry: OfflineSnapshotEntry<T> = {
     key,
+    scope,
     payload,
     fetched_at: meta.fetchedAt ?? new Date().toISOString(),
     backend_commit: meta.backendCommit ?? null,
@@ -63,7 +73,7 @@ export function writeOfflineSnapshot<T>(
   const storage = getSafeStorage();
   if (storage) {
     try {
-      storage.setItem(`${SNAPSHOT_PREFIX}${key}`, JSON.stringify(entry));
+      storage.setItem(scopedSnapshotStorageKey(key, scope), JSON.stringify(entry));
     } catch {
       // 容量不足时仅忽略写入，不阻塞正常业务
     }
@@ -71,18 +81,25 @@ export function writeOfflineSnapshot<T>(
   return entry;
 }
 
-export function readOfflineSnapshot<T>(key: string): OfflineSnapshotEntry<T> | null {
+export function readOfflineSnapshot<T>(
+  key: string,
+  scope = getMobileCacheScope()
+): OfflineSnapshotEntry<T> | null {
   const storage = getSafeStorage();
   if (!storage) return null;
   try {
-    const raw = storage.getItem(`${SNAPSHOT_PREFIX}${key}`);
+    const raw = storage.getItem(scopedSnapshotStorageKey(key, scope));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<OfflineSnapshotEntry<T>>;
     if (!parsed || typeof parsed.fetched_at !== 'string' || !('payload' in parsed)) {
       return null;
     }
+    if (parsed.scope && parsed.scope !== scope) {
+      return null;
+    }
     return {
       key: typeof parsed.key === 'string' ? parsed.key : key,
+      scope: parsed.scope ?? scope,
       payload: parsed.payload as T,
       fetched_at: parsed.fetched_at,
       backend_commit: typeof parsed.backend_commit === 'string' ? parsed.backend_commit : null,
@@ -93,13 +110,14 @@ export function readOfflineSnapshot<T>(key: string): OfflineSnapshotEntry<T> | n
   }
 }
 
-export function getLatestOfflineSnapshotTime(): string | null {
+export function getLatestOfflineSnapshotTime(scope = getMobileCacheScope()): string | null {
   const storage = getSafeStorage();
   if (!storage) return null;
+  const prefix = `${SNAPSHOT_PREFIX}${scope}:`;
   let latest: string | null = null;
   for (let i = 0; i < storage.length; i += 1) {
     const k = storage.key(i);
-    if (!k || !k.startsWith(SNAPSHOT_PREFIX)) continue;
+    if (!k || !k.startsWith(prefix)) continue;
     try {
       const parsed = JSON.parse(storage.getItem(k) ?? '') as { fetched_at?: unknown };
       if (typeof parsed.fetched_at === 'string') {
@@ -114,13 +132,14 @@ export function getLatestOfflineSnapshotTime(): string | null {
   return latest;
 }
 
-export function clearOfflineSnapshots(): void {
+export function clearOfflineSnapshots(scope?: string): void {
   const storage = getSafeStorage();
   if (!storage) return;
+  const prefix = scope ? `${SNAPSHOT_PREFIX}${scope}:` : SNAPSHOT_PREFIX;
   const keysToDelete: string[] = [];
   for (let i = 0; i < storage.length; i += 1) {
     const k = storage.key(i);
-    if (k && k.startsWith(SNAPSHOT_PREFIX)) {
+    if (k && k.startsWith(prefix)) {
       keysToDelete.push(k);
     }
   }
