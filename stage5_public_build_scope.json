@@ -1,7 +1,7 @@
 {
   "schema": "stage5_reviewed_public_projection_v1",
-  "private_source_commit": "353ca5808365d240e3f7975ee6d925b4d8bd82cf",
-  "public_base_commit": "fd0a6a1436f794adfe4e66593f474c97dfa82bd4",
+  "private_source_commit": "4550f18a6289fe5ccc57f953ea92130e18ed8d27",
+  "public_base_commit": "fab9711b4a8f28694b4559739a248bb1fbc49b83",
   "scope": "Cumulative reviewed frontend projection, adapted for read-only public shell; synthetic UI fixture only. No private backend or account records.",
   "files": [
     {
@@ -10,11 +10,11 @@
     },
     {
       "path": "e2e/mock_server.py",
-      "public_blob_sha": "517049b153cc42584e5d5c19157a176d3887bfe3"
+      "public_blob_sha": "83cba2bfec06a369baa6d0f3ed4e1fcf02639bcd"
     },
     {
       "path": "e2e/verify_playwright_mobile.mjs",
-      "public_blob_sha": "51d860bd7101984d85eb058f4eaf64f3731a0724"
+      "public_blob_sha": "b73c376d730c5f2475786cc4de66019ecc102f38"
     },
     {
       "path": "src/components/expert/StockExpertEvidenceCard.tsx",
@@ -22,7 +22,7 @@
     },
     {
       "path": "src/pages/EndOfDayPicker/EndOfDayPicker.tsx",
-      "public_blob_sha": "d1787d38c763bc326872264176fbafa360b8c064"
+      "public_blob_sha": "2e74539a45c2789d7a9eebf856ea5c0f7f72b3a3"
     },
     {
       "path": "src/pages/ExpertWorkbench/ExpertWorkbench.tsx",
@@ -42,7 +42,7 @@
     },
     {
       "path": "src/services/eodApi.ts",
-      "public_blob_sha": "7caf063f0e5eee0430d02c6171311afd625dd85c"
+      "public_blob_sha": "885aebde9f72909063a93d67d40b1b5ae4c48998"
     },
     {
       "path": "src/services/expertApi.ts",
