@@ -20,7 +20,6 @@ import {
 } from '@/platform/runtime';
 import {
   getBackendStatusSnapshot,
-  probeBackendHealth,
   resolveActiveBackendBase,
   subscribeBackendStatus,
   type BackendStatusSnapshot,
@@ -226,17 +225,9 @@ export function MobileSyncCard() {
       setDeviceToken(saved.deviceToken);
       setTestingConn(true);
       try {
-        const [lanProbe, remoteProbe] = await Promise.all([
-          saved.lanUrl ? probeBackendHealth(saved.lanUrl, 1200) : Promise.resolve(null),
-          saved.remoteUrl ? probeBackendHealth(saved.remoteUrl, 2500) : Promise.resolve(null),
-        ]);
         const resolved = await resolveActiveBackendBase(true);
         if (resolved.channel !== 'offline') {
-          const picked = lanProbe?.reachable
-            ? `局域网直连已通 (${lanProbe.latencyMs ?? '-'}ms)`
-            : remoteProbe?.reachable
-              ? `Tailscale 私网已通 (${remoteProbe.latencyMs ?? '-'}ms)`
-              : '主机连通正常';
+          const picked = formatChannelBadge(getBackendStatusSnapshot()).label;
           toast.success(picked);
           void handleCheckManifest(true);
           void handleCheckAppRelease(true);
@@ -244,6 +235,11 @@ export function MobileSyncCard() {
           toast.info('当前未能连通电脑主机，将自动展示本地离线快照');
         } else {
           toast.info('配置已保存');
+        }
+      } catch (err) {
+        // A pairing change may supersede the probe; do not announce old-host success.
+        if (!(err instanceof Error && err.name === 'PairingChangedError')) {
+          toast.error('连接检测失败，请核对配置后重试');
         }
       } finally {
         setTestingConn(false);

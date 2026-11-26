@@ -1,8 +1,8 @@
 {
   "schema": "stage5_reviewed_public_projection_v1",
-  "private_source_commit": "306d151069f0609130906cb4fa66eefb0cbee4df",
-  "public_base_commit": "ae15558b259286e71028ffe1e97dc4b3b3b85715",
-  "scope": "Mixed-source reviewed public read-only frontend projection: pairing cache isolation, evidence freshness, and explicit unreviewed comparison gaps. Mock comparison rows are synthetic; no private account or backend records, credentials or full private parity. Adds native OTA activation receipts/readiness, public UI integration and synthetic emulator assertion; no private backend parity. Four-dimensional comparison display contract and synthetic positive/negative UI tests only; no private comparison admission or account payload projected. Withdraws expired comparison summary along with matrix; synthetic freshness regression.",
+  "private_source_commit": "3e749e0caa97f3d5276102696d02c337da2d58ae",
+  "public_base_commit": "b33dd08afb706e60a4467910c9db73f16c8c3084",
+  "scope": "Mixed-source reviewed public read-only frontend projection: pairing cache isolation, evidence freshness, and explicit unreviewed comparison gaps. Mock comparison rows are synthetic; no private account or backend records, credentials or full private parity. Adds native OTA activation receipts/readiness, public UI integration and synthetic emulator assertion; no private backend parity. Four-dimensional comparison display contract and synthetic positive/negative UI tests only; no private comparison admission or account payload projected. Withdraws expired comparison summary along with matrix; synthetic freshness regression. Mobile same-scope single-flight health resolver, bounded timeout and synthetic pairing contention regressions; existing emulator assertions unchanged.",
   "files": [
     {
       "path": ".github/workflows/build-apk.yml",
@@ -59,8 +59,8 @@
     },
     {
       "path": "src/pages/Settings/MobileSyncCard.tsx",
-      "public_blob_sha": "bf45827b170d1db195d3fa167006f76d5fe4af83",
-      "source_commit": "c89825589538ddb0ebc6805f9395f673871ca6e7",
+      "public_blob_sha": "06ece9ebe1f4c2ccbfcb86e5029ca2d7f94dfd05",
+      "source_commit": "3e749e0caa97f3d5276102696d02c337da2d58ae",
       "projection_kind": "REVIEWED_ADAPTED_SUBSET"
     },
     {
@@ -98,14 +98,14 @@
     },
     {
       "path": "src/services/apiClient.test.ts",
-      "public_blob_sha": "83451ae47a532261ae837524dbfbb42efb8f08ac",
-      "source_commit": "d1d96016235aeb77a22f4b82640ca5c402b8f6bb",
+      "public_blob_sha": "21b2c33d0557407aee04b8a8499f96f262262b90",
+      "source_commit": "3e749e0caa97f3d5276102696d02c337da2d58ae",
       "projection_kind": "REVIEWED_ADAPTED_SUBSET"
     },
     {
       "path": "src/services/apiClient.ts",
-      "public_blob_sha": "873446ad1492e70af0edecc42ce08cd5b1e35e75",
-      "source_commit": "d1d96016235aeb77a22f4b82640ca5c402b8f6bb",
+      "public_blob_sha": "a071d0c3c196dc4136e7c79b9660566e2e7fa6fd",
+      "source_commit": "3e749e0caa97f3d5276102696d02c337da2d58ae",
       "projection_kind": "REVIEWED_ADAPTED_SUBSET"
     },
     {
@@ -143,5 +143,5 @@
     }
   ],
   "omission": "Public shell deliberately excludes desktop paper-book editing, private AI context, account records and private backend. No claim of full private parity.",
-  "prior_projection_source_commit": "02a1093662f266ca3a973bb06e9328a74b88f29a"
+  "prior_projection_source_commit": "306d151069f0609130906cb4fa66eefb0cbee4df"
 }

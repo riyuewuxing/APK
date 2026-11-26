@@ -216,6 +216,48 @@ describe('apiClient dual-channel routing & offline cache', () => {
     expect(readOfflineSnapshot('/api/workbench')).toBeNull();
   });
 
+  it('coalesces simultaneous normal and forced probes of the same pairing', async () => {
+    saveMobileConnectionConfig({ lanUrl: 'https://fixture.example', remoteUrl: 'https://remote.example', deviceToken: 'synthetic-token-00000000' });
+    let finish: (response: unknown) => void = () => undefined;
+    const fetchMock = vi.fn(() => new Promise(resolve => { finish = resolve; }));
+    vi.stubGlobal('fetch', fetchMock);
+    const a = resolveActiveBackendBase();
+    const b = resolveActiveBackendBase(true);
+    const c = resolveActiveBackendBase();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    finish({ ok: true, status: 200, json: async () => ({ status: 'ok' }) });
+    for (const result of await Promise.all([a, b, c])) expect(result.channel).toBe('lan');
+    expect(getBackendStatusSnapshot().channel).toBe('lan');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('a superseded in-flight host cannot overwrite the new host status', async () => {
+    saveMobileConnectionConfig({ lanUrl: 'https://alpha.example', deviceToken: 'synthetic-token-A-00000000' });
+    let finishOld: (response: unknown) => void = () => undefined;
+    vi.stubGlobal('fetch', vi.fn((url: string) => url.includes('alpha')
+      ? new Promise(resolve => { finishOld = resolve; })
+      : Promise.resolve({ ok: true, status: 200, json: async () => ({ status: 'ok' }) })));
+    const old = resolveActiveBackendBase();
+    const rejected = expect(old).rejects.toMatchObject({ name: 'PairingChangedError' });
+    saveMobileConnectionConfig({ lanUrl: 'https://beta.example', deviceToken: 'synthetic-token-B-00000000' });
+    expect(await resolveActiveBackendBase(true)).toEqual({ baseUrl: 'https://beta.example', channel: 'lan' });
+    finishOld({ ok: true, status: 200, json: async () => ({ status: 'ok' }) });
+    await rejected;
+    expect(getBackendStatusSnapshot().activeBaseUrl).toBe('https://beta.example');
+  });
+
+  it('uses a bounded LAN probe long enough for a cold WebView connection', async () => {
+    vi.useFakeTimers();
+    saveMobileConnectionConfig({ lanUrl: 'https://fixture.example', deviceToken: 'synthetic-token-00000000' });
+    vi.stubGlobal('fetch', vi.fn((_url: string, init?: RequestInit) => new Promise((resolve, reject) => {
+      const timer = setTimeout(() => resolve({ ok: true, status: 200, json: async () => ({ status: 'ok' }) }), 1800);
+      init?.signal?.addEventListener('abort', () => { clearTimeout(timer); reject(new DOMException('aborted', 'AbortError')); });
+    })));
+    const pending = resolveActiveBackendBase(true);
+    await vi.advanceTimersByTimeAsync(1800);
+    expect((await pending).channel).toBe('lan');
+  });
+
   it('parses valid Base64 pairing codes and rejects malformed tokens', () => {
     const payload = {
       v: 1,

@@ -1,7 +1,7 @@
 /**
  * 统一后端 API 客户端
  * - 桌面同源（!isNativeApp && 未配置远端地址）：保持零额外探测与原样相对路径 fetch，100% 兼容现有桌面终端与单测。
- * - 移动/远程双通道：自动按 lanUrl (1.2s) -> remoteUrl (2.5s) 探测并附加 Bearer Token，离线自动显式回退本地快照。
+ * - 移动/远程双通道：自动按 lanUrl (3s) -> remoteUrl (4s) 探测并附加 Bearer Token，离线自动显式回退本地快照。
  */
 
 import {
@@ -58,8 +58,8 @@ function assertPairingScope(scope: string): void {
 }
 
 const CHANNEL_CACHE_TTL_MS = 30_000;
-const LAN_PROBE_TIMEOUT_MS = 1200;
-const REMOTE_PROBE_TIMEOUT_MS = 2500;
+const LAN_PROBE_TIMEOUT_MS = 3000;
+const REMOTE_PROBE_TIMEOUT_MS = 4000;
 const DEFAULT_REQUEST_TIMEOUT_MS = 20_000;
 const HEAVY_REQUEST_TIMEOUT_MS = 60_000;
 
@@ -98,6 +98,10 @@ function createRequestSignal(path: string, signal: AbortSignal | null | undefine
     },
   };
 }
+
+type ResolvedBackend = { baseUrl: string; channel: BackendChannel };
+let probeGeneration = 0;
+let pendingProbe: { scope: string; promise: Promise<ResolvedBackend> } | null = null;
 
 let cachedChannel: {
   scope: string;
@@ -147,6 +151,8 @@ export function subscribeBackendStatus(
 
 export function resetApiClientState(): void {
   cachedChannel = null;
+  pendingProbe = null;
+  probeGeneration += 1;
   statusSnapshot = {
     channel: 'same_origin',
     activeBaseUrl: '',
@@ -188,7 +194,6 @@ export async function probeBackendHealth(
       headers: { Accept: 'application/json' },
       signal: controller?.signal,
     });
-    if (timer) clearTimeout(timer);
     const latencyMs = Math.max(1, Date.now() - startedAt);
     if (!resp.ok) {
       return {
@@ -209,99 +214,75 @@ export async function probeBackendHealth(
     }
     return { reachable: true, latencyMs, health: data, error: null };
   } catch (err) {
-    if (timer) clearTimeout(timer);
     return {
       reachable: false,
       latencyMs: null,
       health: null,
       error: err instanceof Error ? err.message : String(err),
     };
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 }
 
-export async function resolveActiveBackendBase(forceRefresh = false): Promise<{
-  baseUrl: string;
-  channel: BackendChannel;
-}> {
+/** One live probe per exact pairing scope. A new scope/reset supersedes old results. */
+export async function resolveActiveBackendBase(forceRefresh = false): Promise<ResolvedBackend> {
   const cfg = getMobileConnectionConfig();
   const scope = getMobileCacheScope(cfg);
   if (!isNativeApp() && !hasConfiguredRemoteBackend(cfg)) {
+    if (pendingProbe || cachedChannel) {
+      probeGeneration += 1;
+      pendingProbe = null;
+      cachedChannel = null;
+    }
+    if (statusSnapshot.channel !== 'same_origin') {
+      emitStatus({ channel: 'same_origin', activeBaseUrl: '', lastLatencyMs: null,
+        lastCheckedAt: null, offlineSnapshotFetchedAt: null, lastError: null, remoteBundleSha256: null });
+    }
     return { baseUrl: '', channel: 'same_origin' };
   }
 
-  const now = Date.now();
-  if (!forceRefresh && cachedChannel?.scope === scope && now < cachedChannel.expiresAt) {
+  // A user-triggered reconnect shares a probe already in flight for this pairing,
+  // rather than firing a duplicate that can overwrite a successful status.
+  if (pendingProbe?.scope === scope) return pendingProbe.promise;
+  if (!forceRefresh && cachedChannel?.scope === scope && Date.now() < cachedChannel.expiresAt) {
     return { baseUrl: cachedChannel.baseUrl, channel: cachedChannel.channel };
   }
-  const checkedAt = new Date().toISOString();
-
-  if (cfg.lanUrl) {
-    const lanProbe = await probeBackendHealth(cfg.lanUrl, LAN_PROBE_TIMEOUT_MS);
+  const generation = ++probeGeneration;
+  const checkCurrent = () => {
     assertPairingScope(scope);
-    if (lanProbe.reachable) {
-      cachedChannel = {
-        scope,
-        baseUrl: cfg.lanUrl,
-        channel: 'lan',
-        expiresAt: now + CHANNEL_CACHE_TTL_MS,
-      };
-      emitStatus({
-        channel: 'lan',
-        activeBaseUrl: cfg.lanUrl,
-        lastLatencyMs: lanProbe.latencyMs,
-        lastCheckedAt: checkedAt,
-        offlineSnapshotFetchedAt: null,
-        lastError: null,
-        remoteBundleSha256:
-          typeof lanProbe.health?.frontend_bundle_sha256 === 'string'
-            ? lanProbe.health.frontend_bundle_sha256
-            : null,
-      });
-      return { baseUrl: cfg.lanUrl, channel: 'lan' };
-    }
-  }
-
-  if (cfg.remoteUrl) {
-    const remoteProbe = await probeBackendHealth(cfg.remoteUrl, REMOTE_PROBE_TIMEOUT_MS);
-    assertPairingScope(scope);
-    if (remoteProbe.reachable) {
-      cachedChannel = {
-        scope,
-        baseUrl: cfg.remoteUrl,
-        channel: 'remote',
-        expiresAt: now + CHANNEL_CACHE_TTL_MS,
-      };
-      emitStatus({
-        channel: 'remote',
-        activeBaseUrl: cfg.remoteUrl,
-        lastLatencyMs: remoteProbe.latencyMs,
-        lastCheckedAt: checkedAt,
-        offlineSnapshotFetchedAt: null,
-        lastError: null,
-        remoteBundleSha256:
-          typeof remoteProbe.health?.frontend_bundle_sha256 === 'string'
-            ? remoteProbe.health.frontend_bundle_sha256
-            : null,
-      });
-      return { baseUrl: cfg.remoteUrl, channel: 'remote' };
-    }
-  }
-
-  cachedChannel = {
-    scope,
-    baseUrl: '',
-    channel: 'offline',
-    expiresAt: now + 5000,
+    if (generation !== probeGeneration) throw new PairingChangedError();
   };
-  emitStatus({
-    channel: 'offline',
-    activeBaseUrl: '',
-    lastLatencyMs: null,
-    lastCheckedAt: checkedAt,
-    offlineSnapshotFetchedAt: getLatestOfflineSnapshotTime(),
-    lastError: '电脑后端未连接（局域网与远程通道均不可达）',
-  });
-  return { baseUrl: '', channel: 'offline' };
+  const run = async (): Promise<ResolvedBackend> => {
+    for (const [baseUrl, channel, timeout] of [
+      [cfg.lanUrl, 'lan', LAN_PROBE_TIMEOUT_MS],
+      [cfg.remoteUrl, 'remote', REMOTE_PROBE_TIMEOUT_MS],
+    ] as const) {
+      if (!baseUrl) continue;
+      const probe = await probeBackendHealth(baseUrl, timeout);
+      checkCurrent();
+      if (!probe.reachable) continue;
+      cachedChannel = { scope, baseUrl, channel, expiresAt: Date.now() + CHANNEL_CACHE_TTL_MS };
+      emitStatus({ channel, activeBaseUrl: baseUrl, lastLatencyMs: probe.latencyMs,
+        lastCheckedAt: new Date().toISOString(), offlineSnapshotFetchedAt: null, lastError: null,
+        remoteBundleSha256: typeof probe.health?.frontend_bundle_sha256 === 'string'
+          ? probe.health.frontend_bundle_sha256 : null });
+      return { baseUrl, channel };
+    }
+    checkCurrent();
+    cachedChannel = { scope, baseUrl: '', channel: 'offline', expiresAt: Date.now() + 5000 };
+    emitStatus({ channel: 'offline', activeBaseUrl: '', lastLatencyMs: null,
+      lastCheckedAt: new Date().toISOString(), offlineSnapshotFetchedAt: getLatestOfflineSnapshotTime(scope),
+      lastError: '电脑后端未连接（局域网与远程通道均不可达）', remoteBundleSha256: null });
+    return { baseUrl: '', channel: 'offline' };
+  };
+  const pending = { scope, promise: run() };
+  pendingProbe = pending;
+  try {
+    return await pending.promise;
+  } finally {
+    if (pendingProbe === pending) pendingProbe = null;
+  }
 }
 
 function buildAuthHeaders(
