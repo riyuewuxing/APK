@@ -1,7 +1,7 @@
 {
   "schema": "stage5_reviewed_public_projection_v1",
   "private_source_commit": "c89825589538ddb0ebc6805f9395f673871ca6e7",
-  "public_base_commit": "86d976a3ce808895df284c9086dc9758c62d20bf",
+  "public_base_commit": "53e355e5129841e7182dd8587b3f2d8c5e42715a",
   "scope": "Mixed-source reviewed public read-only frontend projection: pairing cache isolation, evidence freshness, and explicit unreviewed comparison gaps. Mock comparison rows are synthetic; no private account or backend records, credentials or full private parity. Adds native OTA activation receipts/readiness, public UI integration and synthetic emulator assertion; no private backend parity.",
   "files": [
     {
@@ -18,7 +18,7 @@
     },
     {
       "path": "e2e/verify_emulator_apk.mjs",
-      "public_blob_sha": "b0911d90e633b45974d27bc6bdfac117798224e8",
+      "public_blob_sha": "9a82cfa4b4aa828adf618fc9c5421cde2ba85d79",
       "source_commit": null,
       "projection_kind": "PUBLIC_ONLY_SYNTHETIC_TEST"
     },

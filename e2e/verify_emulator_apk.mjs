@@ -387,18 +387,67 @@ async function main() {
     await cdp.tapBox(mobileTabBtn);
     await cdp.waitForElement({ textRegex: '移动端连接与界面热更新', timeoutMs: 10000 });
 
-    const pairingResp = await fetch(`${args.baseUrl}/api/mobile/pairing`);
+    const pairingResp = await fetch(`${args.baseUrl}/api/mobile/pairing`, { signal: AbortSignal.timeout(5000) });
+    if (!pairingResp.ok) throw new Error(`Mock pairing HTTP ${pairingResp.status}`);
     const pairingJson = await pairingResp.json();
     await cdp.fillTextarea('#mobile-pairing-input', pairingJson.pairing_code);
+    // Dismiss focus and observe the real import click rather than assume CDP dispatch succeeded.
+    await cdp.evalJson(`(() => {
+      const input = document.querySelector('#mobile-pairing-input');
+      if (!input || input.value !== ${JSON.stringify(pairingJson.pairing_code)}) throw new Error('Pairing input mismatch');
+      input.blur();
+      window.__e2ePairingClickSeen = false;
+      const btn = [...document.querySelectorAll('button')].find(b => b.innerText.includes('导入并连接'));
+      if (!btn) throw new Error('Pairing import button missing');
+      btn.addEventListener('click', () => { window.__e2ePairingClickSeen = true; }, { once: true });
+      return true;
+    })()`);
+    await sleep(500);
 
     const importBtn = await cdp.waitForElement({
       selector: 'button',
       textRegex: '导入并连接',
       timeoutMs: 8000,
     });
+    const importHit = await cdp.evalJson(`(() => {
+      const el = document.elementFromPoint(${Math.round(importBtn.x + importBtn.width / 2)}, ${Math.round(importBtn.y + importBtn.height / 2)});
+      return Boolean(el?.closest('button')?.innerText.includes('导入并连接'));
+    })()`);
+    if (!importHit) throw new Error('Pairing import button obscured or outside viewport');
     await cdp.tapBox(importBtn);
 
-    await cdp.waitForElement({ textRegex: '局域网直连已通', timeoutMs: 15000 });
+    try {
+      await cdp.waitForElement({ textRegex: '局域网直连已通', timeoutMs: 15000 });
+    } catch (err) {
+      // Diagnostic only: do not change saved pairing, retry import, or weaken the app assertion.
+      const diag = await cdp.evalJson(`(async () => {
+        const expected = ${JSON.stringify({lanUrl: pairingJson.lan_url, remoteUrl: pairingJson.remote_url, deviceToken: pairingJson.device_token})};
+        let stored = {};
+        try { stored = JSON.parse(localStorage.getItem('tz.mobile.connection.v1') || '{}'); } catch {}
+        const out = {
+          clickSeen: window.__e2ePairingClickSeen === true,
+          lanMatches: stored.lanUrl === expected.lanUrl,
+          remoteMatches: stored.remoteUrl === expected.remoteUrl,
+          tokenMatches: stored.deviceToken === expected.deviceToken,
+        };
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 5000);
+        try {
+          const started = performance.now();
+          const response = await fetch(expected.lanUrl + '/api/health', { signal: controller.signal });
+          out.healthStatus = response.status;
+          out.healthOk = (await response.json())?.status === 'ok';
+          out.healthMs = Math.round(performance.now() - started);
+        } catch (e) { out.healthErrorType = e?.name || 'Unknown'; }
+        finally { clearTimeout(timer); }
+        return out;
+      })()`).catch(() => ({ diagnosticUnavailable: true }));
+      console.error('Pairing failure diagnostics (no credential values):', JSON.stringify(diag));
+      throw err;
+    }
+    if (!(await cdp.evalJson('window.__e2ePairingClickSeen === true'))) {
+      throw new Error('Pairing connectivity label appeared without observed import click');
+    }
     const toastBox = await cdp.evalJson(`(() => {
       const el = document.querySelector('[data-testid="toast-item"]');
       if (!el) return null;
