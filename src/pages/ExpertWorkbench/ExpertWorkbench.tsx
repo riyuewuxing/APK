@@ -605,7 +605,7 @@ export function ExpertWorkbench() {
                         <thead>
                           <tr>
                             <th>指标维度</th>
-                            <th>实测值</th>
+                            <th>观察 / 条件计算</th>
                           </tr>
                         </thead>
                         <tbody>

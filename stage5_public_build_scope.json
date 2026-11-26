@@ -1,8 +1,8 @@
 {
   "schema": "stage5_reviewed_public_projection_v1",
-  "private_source_commit": "3e749e0caa97f3d5276102696d02c337da2d58ae",
-  "public_base_commit": "b33dd08afb706e60a4467910c9db73f16c8c3084",
-  "scope": "Mixed-source reviewed public read-only frontend projection: pairing cache isolation, evidence freshness, and explicit unreviewed comparison gaps. Mock comparison rows are synthetic; no private account or backend records, credentials or full private parity. Adds native OTA activation receipts/readiness, public UI integration and synthetic emulator assertion; no private backend parity. Four-dimensional comparison display contract and synthetic positive/negative UI tests only; no private comparison admission or account payload projected. Withdraws expired comparison summary along with matrix; synthetic freshness regression. Mobile same-scope single-flight health resolver, bounded timeout and synthetic pairing contention regressions; existing emulator assertions unchanged.",
+  "private_source_commit": "a2bb069b0b82b653e84c6f4e9d3bebd4539e327a",
+  "public_base_commit": "9de2d3102947d3433eea169cb0a946312fa5baf8",
+  "scope": "Mixed-source reviewed public read-only frontend projection: pairing cache isolation, evidence freshness, and explicit unreviewed comparison gaps. Mock comparison rows are synthetic; no private account or backend records, credentials or full private parity. Adds native OTA activation receipts/readiness, public UI integration and synthetic emulator assertion; no private backend parity. Four-dimensional comparison display contract and synthetic positive/negative UI tests only; no private comparison admission or account payload projected. Withdraws expired comparison summary along with matrix; synthetic freshness regression. Mobile same-scope single-flight health resolver, bounded timeout and synthetic pairing contention regressions; existing emulator assertions unchanged.; asset-specific metrics header distinguishes observations and conditional calculations.",
   "files": [
     {
       "path": ".github/workflows/build-apk.yml",
@@ -53,8 +53,8 @@
     },
     {
       "path": "src/pages/ExpertWorkbench/ExpertWorkbench.tsx",
-      "public_blob_sha": "9a3b2faca6ca6d2d26baab93bc4154d24dfa4e21",
-      "source_commit": "02a1093662f266ca3a973bb06e9328a74b88f29a",
+      "public_blob_sha": "909e012a7120f257a0ec134e6a4f0b58d7af0843",
+      "source_commit": "a2bb069b0b82b653e84c6f4e9d3bebd4539e327a",
       "projection_kind": "REVIEWED_ADAPTED_SUBSET"
     },
     {
@@ -143,5 +143,5 @@
     }
   ],
   "omission": "Public shell deliberately excludes desktop paper-book editing, private AI context, account records and private backend. No claim of full private parity.",
-  "prior_projection_source_commit": "306d151069f0609130906cb4fa66eefb0cbee4df"
+  "prior_projection_source_commit": "3e749e0caa97f3d5276102696d02c337da2d58ae"
 }
