@@ -1,18 +1,24 @@
 {
   "schema": "stage5_reviewed_public_projection_v1",
-  "private_source_commit": "3e5ce47f6a9cf6c51d8fb93a6932e0b7e508c265",
-  "public_base_commit": "89d877d49dcfc4d17f2a5901463cea9fc6cbacc6",
-  "scope": "Mixed-source reviewed public read-only frontend projection: pairing cache isolation, evidence freshness, and explicit unreviewed comparison gaps. Mock comparison rows are synthetic; no private account or backend records, credentials or full private parity.",
+  "private_source_commit": "c89825589538ddb0ebc6805f9395f673871ca6e7",
+  "public_base_commit": "86d976a3ce808895df284c9086dc9758c62d20bf",
+  "scope": "Mixed-source reviewed public read-only frontend projection: pairing cache isolation, evidence freshness, and explicit unreviewed comparison gaps. Mock comparison rows are synthetic; no private account or backend records, credentials or full private parity. Adds native OTA activation receipts/readiness, public UI integration and synthetic emulator assertion; no private backend parity.",
   "files": [
     {
       "path": ".github/workflows/build-apk.yml",
-      "public_blob_sha": "db98e5da3afaefffd17938d684784d5e0d40543d",
+      "public_blob_sha": "b80c5108db544f8eec5f317045463d03fc703209",
       "source_commit": null,
       "projection_kind": "PUBLIC_ONLY"
     },
     {
       "path": "e2e/mock_server.py",
       "public_blob_sha": "71d10448cca2d49b18c3557e94f817ccb497e6ba",
+      "source_commit": null,
+      "projection_kind": "PUBLIC_ONLY_SYNTHETIC_TEST"
+    },
+    {
+      "path": "e2e/verify_emulator_apk.mjs",
+      "public_blob_sha": "b0911d90e633b45974d27bc6bdfac117798224e8",
       "source_commit": null,
       "projection_kind": "PUBLIC_ONLY_SYNTHETIC_TEST"
     },
@@ -35,6 +41,12 @@
       "projection_kind": "PUBLIC_ONLY"
     },
     {
+      "path": "src/main.tsx",
+      "public_blob_sha": "040fe90e3f4d513e1921213be0b74c5512ca04d7",
+      "source_commit": "c89825589538ddb0ebc6805f9395f673871ca6e7",
+      "projection_kind": "REVIEWED_ADAPTED_SUBSET"
+    },
+    {
       "path": "src/pages/EndOfDayPicker/EndOfDayPicker.tsx",
       "public_blob_sha": "2e74539a45c2789d7a9eebf856ea5c0f7f72b3a3",
       "source_commit": "4550f18a6289fe5ccc57f953ea92130e18ed8d27"
@@ -46,9 +58,27 @@
       "projection_kind": "REVIEWED_ADAPTED_SUBSET"
     },
     {
+      "path": "src/pages/Settings/MobileSyncCard.tsx",
+      "public_blob_sha": "bf45827b170d1db195d3fa167006f76d5fe4af83",
+      "source_commit": "c89825589538ddb0ebc6805f9395f673871ca6e7",
+      "projection_kind": "REVIEWED_ADAPTED_SUBSET"
+    },
+    {
       "path": "src/pages/Watchlist/WatchlistResearchDock.tsx",
       "public_blob_sha": "1b12f2de26d0cba8fc643207629e3236b6a1ea13",
       "source_commit": "4550f18a6289fe5ccc57f953ea92130e18ed8d27"
+    },
+    {
+      "path": "src/platform/bundleActivation.test.ts",
+      "public_blob_sha": "a54701ee63f1a044195af81945327a93fddaa5cf",
+      "source_commit": "c89825589538ddb0ebc6805f9395f673871ca6e7",
+      "projection_kind": "EXACT_REVIEWED_SOURCE"
+    },
+    {
+      "path": "src/platform/bundleActivation.ts",
+      "public_blob_sha": "9abf78643de1799c820cd805de2deb4e4e5da939",
+      "source_commit": "c89825589538ddb0ebc6805f9395f673871ca6e7",
+      "projection_kind": "EXACT_REVIEWED_SOURCE"
     },
     {
       "path": "src/platform/runtime.ts",
@@ -113,5 +143,5 @@
     }
   ],
   "omission": "Public shell deliberately excludes desktop paper-book editing, private AI context, account records and private backend. No claim of full private parity.",
-  "prior_projection_source_commit": "d1d96016235aeb77a22f4b82640ca5c402b8f6bb"
+  "prior_projection_source_commit": "3e5ce47f6a9cf6c51d8fb93a6932e0b7e508c265"
 }

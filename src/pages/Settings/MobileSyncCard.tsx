@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
+import { readActiveBundle, rememberDownloadedBundle } from '@/platform/bundleActivation';
 import { Check, Copy, DownloadCloud, Link2, RefreshCw, ShieldAlert, Smartphone, Trash2, Wifi } from 'lucide-react';
 import { Button, Card, useToast } from '@/components/common';
 import {
@@ -11,13 +12,11 @@ import {
 } from '@/platform/appUpdate';
 import {
   clearMobileConnectionConfig,
-  getLocalBundleSha256,
   getMobileConnectionConfig,
   hasConfiguredRemoteBackend,
   isNativeApp,
   parsePairingCode,
   saveMobileConnectionConfig,
-  setLocalBundleSha256,
 } from '@/platform/runtime';
 import {
   getBackendStatusSnapshot,
@@ -96,9 +95,7 @@ export function MobileSyncCard() {
     getBackendStatusSnapshot()
   );
   const [testingConn, setTestingConn] = useState(false);
-  const [localBundleSha, setLocalBundleSha] = useState<string>(
-    () => getLocalBundleSha256() ?? ''
-  );
+  const [localBundleSha, setLocalBundleSha] = useState('');
   const [nativeBundleVersion, setNativeBundleVersion] = useState<string>('builtin');
   const [remoteManifest, setRemoteManifest] = useState<WebBundleManifest | null>(null);
   const [checkingBundle, setCheckingBundle] = useState(false);
@@ -117,14 +114,13 @@ export function MobileSyncCard() {
     if (!native) {
       return;
     }
-    CapacitorUpdater.current()
-      .then((res) => {
-        const ver = res?.bundle?.version || res?.native || 'builtin';
-        setNativeBundleVersion(ver);
-      })
-      .catch(() => {
-        setNativeBundleVersion('builtin');
-      });
+    let cancelled = false;
+    void readActiveBundle().then(({ version, sha }) => {
+      if (!cancelled) {
+        setNativeBundleVersion(version);
+        setLocalBundleSha(sha);
+      }
+    });
     getInstalledAppInfo()
       .then((info) => {
         if (info) {
@@ -135,6 +131,7 @@ export function MobileSyncCard() {
       .catch(() => {
         // 兼容非标准外壳测试环境
       });
+    return () => { cancelled = true; };
   }, [native]);
 
   useEffect(() => {
@@ -301,7 +298,8 @@ export function MobileSyncCard() {
       }
       const manifest = await fetchWebBundleManifest();
       setRemoteManifest(manifest);
-      const localKnownSha = getLocalBundleSha256();
+      const { sha: localKnownSha } = await readActiveBundle();
+      setLocalBundleSha(localKnownSha);
       if (localKnownSha && localKnownSha === manifest.bundle_sha256) {
         toast.success(`当前已经是最新版本 (${manifest.bundle_version})`);
         return;
@@ -317,8 +315,7 @@ export function MobileSyncCard() {
         version: manifest.bundle_version || manifest.bundle_sha256.slice(0, 12),
         checksum: manifest.zip_sha256,
       });
-      setLocalBundleSha256(manifest.bundle_sha256);
-      setLocalBundleSha(manifest.bundle_sha256);
+      rememberDownloadedBundle(localStorage, bundle.id, manifest.bundle_sha256);
       toast.success(`已下载 ${manifest.bundle_version}，正在瞬间热切换界面...`);
       await CapacitorUpdater.set({ id: bundle.id });
     } catch (err) {
@@ -605,7 +602,7 @@ export function MobileSyncCard() {
                   <span className={styles.settingLabel}>前端界面 1 秒 OTA 热更新（免重装 APK）</span>
                   <span className={styles.settingDesc}>
                     原生包状态: <code>{nativeBundleVersion}</code> · 本地 SHA:{' '}
-                    <code>{localBundleSha ? localBundleSha.slice(0, 12) : '随 APK 内置'}</code> ·
+                    <code>{localBundleSha ? localBundleSha.slice(0, 12) : '未核验'}</code> ·
                     主机最新:{' '}
                     <code>{remoteManifest ? remoteManifest.bundle_version : '未检查'}</code>
                     {remoteManifest ? ` (${remoteManifest.file_count} 文件)` : ''}

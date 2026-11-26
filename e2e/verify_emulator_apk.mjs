@@ -437,6 +437,15 @@ async function main() {
       textRegex: '已是最新界面',
       timeoutMs: 20000,
     });
+    // The visual label alone must not hide native rollback or stale JS state.
+    const activeOta = await cdp.evalJson(`(async () => {
+      const current = await window.Capacitor?.Plugins?.CapacitorUpdater?.current?.();
+      return { id: current?.bundle?.id || '', version: current?.bundle?.version || '' };
+    })()`);
+    if (!activeOta?.id || activeOta.id === 'builtin' || activeOta.version !== 'ota-e2e-20261115') {
+      throw new Error(`OTA native activation not verified: ${JSON.stringify(activeOta)}`);
+    }
+    console.log('OTA active native ID/version verified:', JSON.stringify(activeOta));
     await sleep(400);
     adbScreencap(path.join(outDir, 'emulator_03_ota_done.png'));
     screenshots.push('emulator_03_ota_done.png');
