@@ -812,6 +812,11 @@ export function guardSubjectReview(card: DeepResearchCard, now: number, response
     subject_review_status: 'SUBJECT_REVIEW_REFRESH_REQUIRED',
     audit_claims: [],
     opportunity_cost_matrix: [],
+    asset_specific_metrics: {
+      ...card.asset_specific_metrics,
+      ...('替代机会证据' in (card.asset_specific_metrics ?? {}) ? { '替代机会证据': '独立审查已失效；已撤回同口径比较，需重新核验' } : {}),
+      ...('正式准入状态' in (card.asset_specific_metrics ?? {}) ? { '正式准入状态': 'SUBJECT_REVIEW_REFRESH_REQUIRED' } : {}),
+    },
     research_playbook: card.research_playbook ? {
       ...card.research_playbook,
       status: card.research_playbook.reference_band ? 'REFERENCE_ONLY' : 'BLOCKED',

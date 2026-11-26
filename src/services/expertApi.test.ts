@@ -8,6 +8,7 @@ describe('subject review freshness', () => {
       subject_review_valid_until: '2026-11-26T00:00:00Z',
       audit_claims: [{claim_id: 'claim'}],
       opportunity_cost_matrix: [{alternative_id: 'cash'}],
+      asset_specific_metrics: {'替代机会证据': '1/1 项已核验', '正式准入状态': 'REVIEW_VERIFIED', '原始报价': 'fixture'},
       research_playbook: {
         status: 'CONDITIONAL_RESEARCH', research_direction: 'BUY',
         reference_band: {low_cny: 9, high_cny: 11},
@@ -30,6 +31,10 @@ describe('subject review freshness', () => {
       expect(guarded.decision_packet.cluster_votes).toEqual([]);
       expect(guarded.audit_claims).toEqual([]);
       expect(guarded.opportunity_cost_matrix).toEqual([]);
+      expect(guarded.asset_specific_metrics['替代机会证据']).toContain('已撤回同口径比较');
+      expect(guarded.asset_specific_metrics['正式准入状态']).toBe('SUBJECT_REVIEW_REFRESH_REQUIRED');
+      expect(guarded.asset_specific_metrics['原始报价']).toBe('fixture');
+      expect(card.asset_specific_metrics['替代机会证据']).toBe('1/1 项已核验');
       expect(guarded.research_playbook?.candidate_band).toBeNull();
       expect(guarded.research_playbook?.reference_band).toEqual({low_cny: 9, high_cny: 11});
     }
