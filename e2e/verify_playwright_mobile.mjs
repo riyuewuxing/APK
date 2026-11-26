@@ -391,8 +391,23 @@ async function main() {
   }
   const verifiedComparison = page.locator('tr').filter({hasText: '沪深300ETF(基准)'});
   await verifiedComparison.getByText('已核验可比', {exact: true}).waitFor({state: 'visible', timeout: 8000});
-  await verifiedComparison.getByText('单标的波动风险更低', {exact: true}).waitFor({state: 'visible', timeout: 8000});
-  console.log('Synthetic comparison UI: gaps visible, unadmitted advantage withheld, admitted row retained');
+  const detail = verifiedComparison.getByTestId('comparison-verified-details');
+  await detail.getByText('[DEMO] 同期限同基准等额配置', {exact: true}).waitFor({state: 'visible', timeout: 8000});
+  await detail.getByText('候选优势：预期净收益更高', {exact: true}).waitFor({state: 'visible', timeout: 8000});
+  await detail.getByText('替代优势：下行风险更低；流动性成本更低；组合边际风险更低', {exact: true}).waitFor({state: 'visible', timeout: 8000});
+  const metricText = await detail.innerText();
+  for (const value of ['候选 4% / 替代 3%', '候选 5% / 替代 2%', '候选 10 bps / 替代 5 bps', '候选 2% / 替代 1%']) {
+    if (!metricText.includes(value)) throw new Error('verified numeric comparison missing: ' + value);
+  }
+  if (await pendingComparison.getByTestId('comparison-verified-details').count()
+      || await pendingComparison.getByText('[DEMO] 不应展示的旧候选优势', {exact: true}).count()) {
+    throw new Error('unadmitted numeric comparison leaked');
+  }
+  const legacyComparison = page.locator('tr').filter({hasText: '[DEMO] 旧版可比标记'});
+  await legacyComparison.getByText('仅研究候选', {exact: true}).waitFor({state: 'visible', timeout: 8000});
+  await legacyComparison.getByText('缺少一致的四维比较数值或口径，已扣留旧优势', {exact: true}).waitFor({state: 'visible', timeout: 8000});
+  if (await legacyComparison.getByTestId('comparison-verified-details').count()) throw new Error('legacy flag promoted without evidence');
+  console.log('Synthetic comparison UI: verified numbers and both directions visible; pending and legacy rows withheld');
 
   await page.goto(`${args.baseUrl}/expert?symbol=600900&tab=backtest`, { waitUntil: 'domcontentloaded' });
   const cashResearch = page.getByTestId('cash-execution-research');

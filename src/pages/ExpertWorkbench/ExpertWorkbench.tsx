@@ -36,6 +36,8 @@ import { usePolling, useTheme } from '@/hooks';
 import { getFullQuotes } from '@/services/sdk';
 import {
   CLUSTER_LABELS_ZH,
+  comparisonEvidenceReady,
+  comparisonAdvantageLabel,
   extractSubjectSixDigits,
   fetchQuantStatsHtml,
   fetchQuantStatsJson,
@@ -638,7 +640,9 @@ export function ExpertWorkbench() {
                             </tr>
                           </thead>
                           <tbody>
-                            {researchCard.opportunity_cost_matrix.map((row) => (
+                            {researchCard.opportunity_cost_matrix.map((row) => {
+                              const comparable = comparisonEvidenceReady(row);
+                              return (
                               <tr key={row.alternative_id}>
                                 <td className={styles.mono}>
                                   {row.alternative_name} ({row.alternative_id})
@@ -646,16 +650,30 @@ export function ExpertWorkbench() {
                                 <td>{row.alternative_kind}</td>
                                 <td>{row.thesis_quality}</td>
                                 <td className={styles.mono}>{row.zero_position_test}</td>
-                                <td>{row.decision_eligible ? '已核验可比' : '仅研究候选'}</td>
+                                <td>{comparable ? '已核验可比' : '仅研究候选'}</td>
                                 <td>
                                   <div>{row.shared_unknowns.join('；') || '暂无已记录的证据缺口'}</div>
                                   <div>{row.governance_reasons.join('；')}</div>
-                                  {row.decision_eligible && row.alternative_advantages.length > 0 && (
-                                    <div>{row.alternative_advantages.join('；')}</div>
-                                  )}
+                                  {comparable ? (
+                                    <div data-testid="comparison-verified-details">
+                                      <div>{row.comparison_basis_label}</div>
+                                      {row.comparison_metrics?.map(metric => (
+                                        <div key={metric.key}>
+                                          <strong>{metric.label}</strong>：候选 {metric.candidate_value}{metric.unit === '%' ? '%' : ' bps'} / 替代 {metric.alternative_value}{metric.unit === '%' ? '%' : ' bps'}
+                                          <div>{metric.definition}</div>
+                                        </div>
+                                      ))}
+                                      <div>候选优势：{row.candidate_advantages.map(comparisonAdvantageLabel).join('；') || '无'}</div>
+                                      <div>替代优势：{row.alternative_advantages.map(comparisonAdvantageLabel).join('；') || '无'}</div>
+                                      <div>四维权衡不等于综合排名或交易指令</div>
+                                    </div>
+                                  ) : row.decision_eligible ? (
+                                    <div>缺少一致的四维比较数值或口径，已扣留旧优势</div>
+                                  ) : null}
                                 </td>
                               </tr>
-                            ))}
+                              );
+                            })}
                           </tbody>
                         </table>
                       </div>

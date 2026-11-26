@@ -326,6 +326,56 @@ export interface TurnaroundAndTrapReport {
   emitted_indicators: RawIndicatorEvidence[];
 }
 
+export interface OpportunityComparisonMetric {
+  key: string;
+  label: string;
+  unit: string;
+  candidate_value: number;
+  alternative_value: number;
+  definition: string;
+}
+
+const COMPARISON_DIMENSIONS = [
+  ['expected_net_return_pct', '预期净收益', '%', true],
+  ['downside_risk_pct', '下行风险', '%', false],
+  ['liquidity_cost_bps', '流动性成本', 'bps', false],
+  ['marginal_portfolio_risk_pct', '组合边际风险', '%', false],
+] as const;
+
+/** A display guard, not an independent admission authority. Reject old text-only
+ * rows and inconsistent numeric directions instead of rendering them as verified. */
+export function comparisonEvidenceReady(row: OpportunityCostMatrixRow): boolean {
+  const metrics = row.comparison_metrics;
+  if (row.decision_eligible !== true || typeof row.comparison_basis_label !== 'string'
+      || !row.comparison_basis_label.trim() || !Array.isArray(metrics)
+      || metrics.length !== COMPARISON_DIMENSIONS.length
+      || !Array.isArray(row.governance_reasons) || row.governance_reasons.length !== 0
+      || !Array.isArray(row.candidate_advantages) || !Array.isArray(row.alternative_advantages)) return false;
+  const left: string[] = [];
+  const right: string[] = [];
+  for (const [key, label, unit, higher] of COMPARISON_DIMENSIONS) {
+    const matches = metrics.filter(item => item?.key === key);
+    if (matches.length !== 1) return false;
+    const item = matches[0];
+    if (item.label !== label || item.unit !== unit
+        || typeof item.definition !== 'string' || !item.definition.trim()
+        || !Number.isFinite(item.candidate_value) || !Number.isFinite(item.alternative_value)
+        || ((key === 'downside_risk_pct' || key === 'liquidity_cost_bps')
+            && (item.candidate_value < 0 || item.alternative_value < 0))) return false;
+    if (item.candidate_value === item.alternative_value) continue;
+    const direction = key.toUpperCase() + (higher ? '_HIGHER' : '_LOWER');
+    ((item.candidate_value > item.alternative_value) === higher ? left : right).push(direction);
+  }
+  return JSON.stringify(left) === JSON.stringify(row.candidate_advantages)
+    && JSON.stringify(right) === JSON.stringify(row.alternative_advantages);
+}
+
+export function comparisonAdvantageLabel(code: string): string {
+  const dimension = COMPARISON_DIMENSIONS.find(([key, , , higher]) =>
+    code === key.toUpperCase() + (higher ? '_HIGHER' : '_LOWER'));
+  return dimension ? dimension[1] + (dimension[3] ? '更高' : '更低') : '';
+}
+
 export interface OpportunityCostMatrixRow {
   alternative_id: string;
   alternative_name: string;
@@ -338,6 +388,8 @@ export interface OpportunityCostMatrixRow {
   alternative_advantages: string[];
   shared_unknowns: string[];
   governance_reasons: string[];
+  comparison_basis_label?: string | null;
+  comparison_metrics?: OpportunityComparisonMetric[];
 }
 
 export interface KlineBarPoint {

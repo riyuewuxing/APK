@@ -1,8 +1,8 @@
 {
   "schema": "stage5_reviewed_public_projection_v1",
-  "private_source_commit": "c89825589538ddb0ebc6805f9395f673871ca6e7",
-  "public_base_commit": "53e355e5129841e7182dd8587b3f2d8c5e42715a",
-  "scope": "Mixed-source reviewed public read-only frontend projection: pairing cache isolation, evidence freshness, and explicit unreviewed comparison gaps. Mock comparison rows are synthetic; no private account or backend records, credentials or full private parity. Adds native OTA activation receipts/readiness, public UI integration and synthetic emulator assertion; no private backend parity.",
+  "private_source_commit": "02a1093662f266ca3a973bb06e9328a74b88f29a",
+  "public_base_commit": "f1a87c4a70995149fdaa18e03f7677f5dcdee557",
+  "scope": "Mixed-source reviewed public read-only frontend projection: pairing cache isolation, evidence freshness, and explicit unreviewed comparison gaps. Mock comparison rows are synthetic; no private account or backend records, credentials or full private parity. Adds native OTA activation receipts/readiness, public UI integration and synthetic emulator assertion; no private backend parity. Four-dimensional comparison display contract and synthetic positive/negative UI tests only; no private comparison admission or account payload projected.",
   "files": [
     {
       "path": ".github/workflows/build-apk.yml",
@@ -12,7 +12,7 @@
     },
     {
       "path": "e2e/mock_server.py",
-      "public_blob_sha": "71d10448cca2d49b18c3557e94f817ccb497e6ba",
+      "public_blob_sha": "16297991c70577a9a45a4fafb7f11c84c0f43b3f",
       "source_commit": null,
       "projection_kind": "PUBLIC_ONLY_SYNTHETIC_TEST"
     },
@@ -24,7 +24,7 @@
     },
     {
       "path": "e2e/verify_playwright_mobile.mjs",
-      "public_blob_sha": "da171a3cf2e5bedb2c500e0eb16ded48d78dacb6",
+      "public_blob_sha": "763cb42906fedbf3c7d0e6094f0800877585888f",
       "source_commit": null,
       "projection_kind": "PUBLIC_ONLY_SYNTHETIC_TEST"
     },
@@ -53,8 +53,8 @@
     },
     {
       "path": "src/pages/ExpertWorkbench/ExpertWorkbench.tsx",
-      "public_blob_sha": "0c40a139e271e96f22ef763ec1e7fe6c4763a54c",
-      "source_commit": "3e5ce47f6a9cf6c51d8fb93a6932e0b7e508c265",
+      "public_blob_sha": "9a3b2faca6ca6d2d26baab93bc4154d24dfa4e21",
+      "source_commit": "02a1093662f266ca3a973bb06e9328a74b88f29a",
       "projection_kind": "REVIEWED_ADAPTED_SUBSET"
     },
     {
@@ -115,14 +115,14 @@
     },
     {
       "path": "src/services/expertApi.test.ts",
-      "public_blob_sha": "4bc45c296d65d88d3d78076e91242ed815ac625c",
-      "source_commit": "d1d96016235aeb77a22f4b82640ca5c402b8f6bb",
-      "projection_kind": "EXACT_REVIEWED_SOURCE"
+      "public_blob_sha": "1b844fc20a2373e8f0513b4c47d82bb416188d6a",
+      "source_commit": "02a1093662f266ca3a973bb06e9328a74b88f29a",
+      "projection_kind": "REVIEWED_ADAPTED_SUBSET"
     },
     {
       "path": "src/services/expertApi.ts",
-      "public_blob_sha": "b39cbf816d5020133754b8e1846cc9f8feaafb07",
-      "source_commit": "d1d96016235aeb77a22f4b82640ca5c402b8f6bb",
+      "public_blob_sha": "e1230bc88056d9291502b2a2a15ce3ecf8fb188f",
+      "source_commit": "02a1093662f266ca3a973bb06e9328a74b88f29a",
       "projection_kind": "REVIEWED_ADAPTED_SUBSET"
     },
     {
@@ -143,5 +143,5 @@
     }
   ],
   "omission": "Public shell deliberately excludes desktop paper-book editing, private AI context, account records and private backend. No claim of full private parity.",
-  "prior_projection_source_commit": "3e5ce47f6a9cf6c51d8fb93a6932e0b7e508c265"
+  "prior_projection_source_commit": "c89825589538ddb0ebc6805f9395f673871ca6e7"
 }
