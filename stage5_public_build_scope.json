@@ -6,7 +6,7 @@
   "files": [
     {
       "path": ".github/workflows/build-apk.yml",
-      "public_blob_sha": "fa5477333ec74027fba601e24599d990b913b656",
+      "public_blob_sha": "f60de327f17d5e8081e5509bc91249001d0704ea",
       "source_commit": null,
       "projection_kind": "PUBLIC_ONLY"
     },
@@ -60,7 +60,7 @@
     },
     {
       "path": "src/components/expert/ObservationPanels.tsx",
-      "public_blob_sha": "e8c60811b5018a234b4b1a8a427137fe2fb0af50",
+      "public_blob_sha": "aa862eb73f4baaaf0afb65a4f02e883294497aca",
       "source_commit": null,
       "projection_kind": "REVIEWED_PUBLIC_GENERIC_R12"
     },
@@ -244,6 +244,12 @@
       "path": "src/services/xrayApi.ts",
       "public_blob_sha": "4112065b32b3b452291371c35a9cf52d3d00823e",
       "source_commit": "4550f18a6289fe5ccc57f953ea92130e18ed8d27"
+    },
+    {
+      "path": "vite.config.ts",
+      "source_commit": null,
+      "projection_kind": "PUBLIC_TEST_CONFIGURATION_R12",
+      "public_blob_sha": "a61727bd8776a0a555b9d638a4876cb18fad19c0"
     }
   ],
   "omission": "Public shell deliberately excludes desktop paper-book editing, private AI context, account records and private backend. No claim of full private parity.",

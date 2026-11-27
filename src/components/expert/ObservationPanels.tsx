@@ -176,7 +176,7 @@ export function PredictionObservationPanel() {
     const ac=new AbortController(); request.current=ac;
     setBusy(true); setError(''); setValue(null);
     void apiRequestJson<unknown>('/api/research-observations/prediction',{signal:ac.signal,timeoutMs:10000,fallbackToCache:false})
-      .then(data=>{if(!ac.signal.aborted)setValue(data);})
+      .then(data=>{if(!ac.signal.aborted){setClock(Date.now());setValue(data);}})
       .catch(()=>{if(!ac.signal.aborted)setError('预测观察读取失败；不使用旧缓存。');})
       .finally(()=>{if(!ac.signal.aborted)setBusy(false);});
     return ()=>ac.abort();
