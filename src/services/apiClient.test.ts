@@ -7,6 +7,7 @@ import {
 } from '@/platform/runtime';
 import {
   apiRequestJson,
+  apiRequestText,
   getBackendStatusSnapshot,
   resetApiClientState,
   resolveActiveBackendBase,
@@ -353,5 +354,68 @@ describe('R09 late authorization response invalidation', () => {
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+});
+
+
+describe('R12 response body deadlines', () => {
+  beforeEach(() => {
+    vi.stubGlobal('localStorage', createMemoryStorage());
+    clearMobileConnectionConfig();
+    resetApiClientState();
+    vi.useFakeTimers();
+  });
+  afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
+  it.each(['json', 'text'] as const)('times out a stalled %s body after headers', async mode => {
+    let finish!: (data: unknown) => void;
+    let signal: AbortSignal | null | undefined;
+    const body = new Promise(resolve => { finish = resolve; });
+    vi.stubGlobal('fetch', vi.fn(async (_url: string, init?: RequestInit) => {
+      signal = init?.signal;
+      return { ok: true, status: 200, json: () => body, text: () => body };
+    }));
+    const pending = mode === 'json'
+      ? apiRequestJson('/api/workbench', { timeoutMs: 250 })
+      : apiRequestText('/api/report', { timeoutMs: 250 });
+    const rejected = expect(pending).rejects.toMatchObject({ name: 'TimeoutError' });
+    await vi.advanceTimersByTimeAsync(250);
+    await rejected;
+    expect(signal?.aborted).toBe(true);
+    finish({ stale: true });
+    await vi.advanceTimersByTimeAsync(1);
+    expect(readOfflineSnapshot('/api/workbench')).toBeNull();
+  });
+  it('caller abort after headers prevents late body success', async () => {
+    let begin!: () => void;
+    let finish!: (data: unknown) => void;
+    const started = new Promise<void>(resolve => { begin = resolve; });
+    const body = new Promise(resolve => { finish = resolve; });
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200, json: () => { begin(); return body; } })));
+    const ac = new AbortController();
+    const pending = apiRequestJson('/api/workbench', { signal: ac.signal });
+    const rejected = expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+    await started;
+    ac.abort();
+    await rejected;
+    finish({ stale: true });
+  });
+  it('a denial at headers is not delayed by its body', async () => {
+    const text = vi.fn(() => new Promise(() => undefined));
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 403, text })));
+    await expect(apiRequestText('/api/report')).rejects.toMatchObject({ name: 'AuthError', status: 403 });
+    expect(text).not.toHaveBeenCalled();
+  });
+  it('reset invalidates a late body even when pairing scope is unchanged', async () => {
+    let begin!: () => void;
+    let finish!: (data: unknown) => void;
+    const started = new Promise<void>(resolve => { begin = resolve; });
+    const body = new Promise(resolve => { finish = resolve; });
+    vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, status: 200, json: () => { begin(); return body; } })));
+    const pending = apiRequestJson('/api/workbench');
+    const rejected = expect(pending).rejects.toMatchObject({ name: 'AuthError' });
+    await started;
+    resetApiClientState();
+    finish({ stale: true });
+    await rejected;
   });
 });

@@ -155,6 +155,7 @@ export function subscribeBackendStatus(
 }
 
 export function resetApiClientState(): void {
+  authGeneration += 1;
   cachedChannel = null;
   pendingProbe = null;
   probeGeneration += 1;
@@ -313,34 +314,60 @@ function buildAuthHeaders(
   return headers;
 }
 
-export async function apiFetch(
+type ApiFetchOptions = RequestInit & { skipAuth?: boolean; forceProbe?: boolean; timeoutMs?: number };
+type ApiFetchResult = { response: Response; baseUrl: string; channel: BackendChannel };
+
+// Keep the signal alive across discovery, headers and buffered body consumption.
+// Raw apiFetch callers still own the lifetime of their streaming response body.
+async function withApiResponse<T>(
   path: string,
-  options?: RequestInit & { skipAuth?: boolean; forceProbe?: boolean; timeoutMs?: number }
-): Promise<{ response: Response; baseUrl: string; channel: BackendChannel }> {
+  options: ApiFetchOptions | undefined,
+  consume: (result: ApiFetchResult) => Promise<T> | T,
+): Promise<T> {
   const { skipAuth, forceProbe, timeoutMs = requestTimeoutForPath(path), ...fetchInit } = options ?? {};
   buildApiUrl(path, '');
   const scope = getMobileCacheScope();
-  const { channel, baseUrl } = await resolveActiveBackendBase(Boolean(forceProbe));
-  assertPairingScope(scope);
-  if (channel === 'offline') {
-    throw new Error('电脑后端未连接');
-  }
-  const url = buildApiUrl(path, baseUrl);
-  const headers = buildAuthHeaders(fetchInit.headers, channel, skipAuth);
+  const epoch = authGeneration;
   const requestSignal = createRequestSignal(path, fetchInit.signal, timeoutMs);
-  const finalInit: RequestInit = headers
-    ? { ...fetchInit, headers, signal: requestSignal.signal, redirect: 'error', cache: 'no-store' }
-    : { ...fetchInit, signal: requestSignal.signal, redirect: 'error', cache: 'no-store' };
-  try {
-    const response = await fetch(url, finalInit);
+  const check = () => {
+    requestSignal.signal.throwIfAborted();
     assertPairingScope(scope);
-    return { response, baseUrl, channel };
+    assertAuthGeneration(epoch);
+  };
+  let abortListener: () => void = () => undefined;
+  const aborted = new Promise<never>((_resolve, reject) => {
+    abortListener = () => reject(requestSignal.didTimeout() ? requestSignal.timeoutError()
+      : new DOMException('The operation was aborted.', 'AbortError'));
+    if (requestSignal.signal.aborted) abortListener();
+    else requestSignal.signal.addEventListener('abort', abortListener, { once: true });
+  });
+  const run = async () => {
+    check();
+    const { channel, baseUrl } = await resolveActiveBackendBase(Boolean(forceProbe));
+    check();
+    if (channel === 'offline') throw new Error('电脑后端未连接');
+    const url = buildApiUrl(path, baseUrl);
+    const headers = buildAuthHeaders(fetchInit.headers, channel, skipAuth);
+    const response = await fetch(url, {
+      ...fetchInit, ...(headers ? { headers } : {}), signal: requestSignal.signal,
+      redirect: 'error', cache: 'no-store',
+    });
+    check();
+    return await consume({ response, baseUrl, channel });
+  };
+  try {
+    return await Promise.race([aborted, run()]);
   } catch (error) {
     if (requestSignal.didTimeout()) throw requestSignal.timeoutError();
     throw error;
   } finally {
+    requestSignal.signal.removeEventListener('abort', abortListener);
     requestSignal.dispose();
   }
+}
+
+export async function apiFetch(path: string, options?: ApiFetchOptions): Promise<ApiFetchResult> {
+  return withApiResponse(path, options, result => result);
 }
 
 export async function apiRequestJson<T>(
@@ -383,13 +410,13 @@ export async function apiRequestJson<T>(
   };
 
   try {
-    const { response, baseUrl, channel } = await apiFetch(path, {
+    const { payload, baseUrl, channel } = await withApiResponse(path, {
       method,
       signal: options?.signal,
       timeoutMs: options?.timeoutMs,
       headers: { Accept: 'application/json', ...(postHeaders ?? {}) },
       body: options?.body !== undefined ? JSON.stringify(options.body) : undefined,
-    });
+    }, async ({response, baseUrl, channel}) => {
 
     assertPairingScope(scope);
     assertAuthGeneration(authEpoch);
@@ -400,7 +427,9 @@ export async function apiRequestJson<T>(
         clearOfflineSnapshots(scope);
         emitStatus({ lastError: `设备鉴权或访问受限（HTTP ${response.status}），已停用当前离线快照` });
       }
-      const detail = await response.text().catch(() => '');
+      // Denial is authoritative at headers; never wait on its body.
+      const detail = response.status === 401 || response.status === 403 ? ''
+        : await response.text().catch(() => '');
       throw new HttpStatusError(
         response.status,
         `HTTP ${response.status} (${path}): ${detail.slice(0, 160)}`,
@@ -411,6 +440,8 @@ export async function apiRequestJson<T>(
     let payload: T;
     try { payload = (await response.json()) as T; }
     catch { throw new HttpStatusError(response.status, '后端 JSON 响应无效，不能用旧缓存掩盖错误'); }
+    return { payload, baseUrl, channel };
+    });
     assertPairingScope(scope);
     assertAuthGeneration(authEpoch);
     if (channel !== 'offline' && statusSnapshot.channel === 'offline') {
@@ -442,11 +473,11 @@ export async function apiRequestText(
 ): Promise<string> {
   const scope = getMobileCacheScope();
   const authEpoch = authGeneration;
-  const { response } = await apiFetch(path, {
+  const result = await withApiResponse(path, {
     method: 'GET',
     signal: options?.signal,
     timeoutMs: options?.timeoutMs,
-  });
+  }, async ({response}) => {
   assertPairingScope(scope);
   assertAuthGeneration(authEpoch);
   if (!response.ok) {
@@ -455,10 +486,12 @@ export async function apiRequestText(
       cachedChannel = null;
       clearOfflineSnapshots(scope);
     }
-    const detail = await response.text().catch(() => '');
-    throw new Error(`HTTP ${response.status} (${path}): ${detail.slice(0, 160)}`);
+    const denied = response.status === 401 || response.status === 403;
+    const detail = denied ? '' : await response.text().catch(() => '');
+    throw new HttpStatusError(response.status, `HTTP ${response.status} (${path}): ${detail.slice(0, 160)}`, denied);
   }
-  const result = await response.text();
+  return await response.text();
+  });
   assertPairingScope(scope);
   assertAuthGeneration(authEpoch);
   return result;
