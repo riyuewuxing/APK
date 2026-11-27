@@ -2,6 +2,8 @@
  * 应用根组件
  */
 
+import { useSyncExternalStore } from 'react';
+import { getMobileCacheScope, subscribeMobilePairingScope } from './platform/runtime';
 import { MotionConfig } from 'framer-motion';
 import { AppRouter } from './router';
 import { ToastProvider } from './components/common';
@@ -18,10 +20,11 @@ function MotionRoot({ children }: { children: React.ReactNode }) {
 }
 
 export function App() {
+  const scope = useSyncExternalStore(subscribeMobilePairingScope, getMobileCacheScope, getMobileCacheScope);
   return (
     <ThemeProvider>
       <MotionRoot>
-        <AppSettingsProvider>
+        <AppSettingsProvider key={scope}>
           <BoardDataProvider>
             <ToastProvider>
               <AppRouter />

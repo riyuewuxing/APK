@@ -1,12 +1,12 @@
 {
   "schema": "stage5_reviewed_public_projection_v1",
-  "private_source_commit": "5f136112ca866278f960607badffe11798866b5c",
-  "public_base_commit": "0d6223c68a448cb8883968afef67725a145f19e6",
+  "private_source_commit": "40dd9587e96eff09bd426405d4c34f6ac602c061",
+  "public_base_commit": "87c1447b7133d816d78cb95adc263f2c3ca60384",
   "scope": "Mixed-source reviewed public read-only frontend projection: pairing cache isolation, evidence freshness, and explicit unreviewed comparison gaps. Mock comparison rows are synthetic; no private account or backend records, credentials or full private parity. Adds native OTA activation receipts/readiness, public UI integration and synthetic emulator assertion; no private backend parity. Four-dimensional comparison display contract and synthetic positive/negative UI tests only; no private comparison admission or account payload projected. Withdraws expired comparison summary along with matrix; synthetic freshness regression. Mobile same-scope single-flight health resolver, bounded timeout and synthetic pairing contention regressions; existing emulator assertions unchanged.; asset-specific metrics header distinguishes observations and conditional calculations. R08: bounded descriptive reference group UI projection; synthetic desktop/mobile browser test, no live account or AI data. R08 read-only cockpit and generic deferred research UI gate, synthetic tests only; no private AI implementation or account records. R08: pairing-bound display and explicit completed-read browser assertions. R09: reviewed pairing namespace and API transport hardening, synthetic tests; exact action commits and least privileges.",
   "files": [
     {
       "path": ".github/workflows/build-apk.yml",
-      "public_blob_sha": "12ad4a6918a758959f24c16ae661f768e8febbda",
+      "public_blob_sha": "49518dcb26d4c20f71387630caa31b30ca014d5a",
       "source_commit": null,
       "projection_kind": "PUBLIC_ONLY"
     },
@@ -45,6 +45,12 @@
       "public_blob_sha": "f9f21d34d3cdee9918c4bc6a1bf50f304bad4510",
       "source_commit": null,
       "projection_kind": "PUBLIC_ONLY_SYNTHETIC_TEST"
+    },
+    {
+      "path": "src/App.tsx",
+      "source_commit": "40dd9587e96eff09bd426405d4c34f6ac602c061",
+      "projection_kind": "REVIEWED_ADAPTED_PUBLIC_SHELL",
+      "public_blob_sha": "a803005c06497dd7367a8362fdecada49423e68b"
     },
     {
       "path": "src/components/expert/StockExpertEvidenceCard.tsx",
@@ -131,8 +137,8 @@
     },
     {
       "path": "src/platform/runtime.ts",
-      "public_blob_sha": "9ea3200fb271c14b4b56f51d77a3d219a462ab87",
-      "source_commit": "5f136112ca866278f960607badffe11798866b5c",
+      "public_blob_sha": "c8d4baeef5b898c68a39074b29a6889e45eec970",
+      "source_commit": "40dd9587e96eff09bd426405d4c34f6ac602c061",
       "projection_kind": "EXACT_REVIEWED_SOURCE"
     },
     {
@@ -193,6 +199,18 @@
       "source_commit": "4550f18a6289fe5ccc57f953ea92130e18ed8d27"
     },
     {
+      "path": "src/services/researchStream.test.ts",
+      "public_blob_sha": "b2340f1899dc4cd57c91c19a7802d7ed493affc5",
+      "source_commit": "40dd9587e96eff09bd426405d4c34f6ac602c061",
+      "projection_kind": "EXACT_REVIEWED_SOURCE"
+    },
+    {
+      "path": "src/services/researchStream.ts",
+      "public_blob_sha": "ab90d03c5b4fac05ed6559d52c4afe4f1bdafb4a",
+      "source_commit": "40dd9587e96eff09bd426405d4c34f6ac602c061",
+      "projection_kind": "EXACT_REVIEWED_SOURCE"
+    },
+    {
       "path": "src/services/researchUiGate.test.ts",
       "public_blob_sha": "54ee924c7c4d775e22b9af55037df89b2139a588",
       "source_commit": "6010dc6d9009a9ca6b4667af159a8a73ddc8b597",
@@ -211,5 +229,5 @@
     }
   ],
   "omission": "Public shell deliberately excludes desktop paper-book editing, private AI context, account records and private backend. No claim of full private parity.",
-  "prior_projection_source_commit": "2a5a670f1f01ab6ad20ba7010cbdf4f50e1fc263"
+  "prior_projection_source_commit": "5f136112ca866278f960607badffe11798866b5c"
 }

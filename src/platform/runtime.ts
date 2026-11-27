@@ -144,6 +144,7 @@ export function saveMobileConnectionConfig(
     if (changed) forgetOldCaches(storage);
     storage.setItem(CONNECTION_STORAGE_KEY, JSON.stringify(next));
   }
+  if (changed && typeof window !== 'undefined') window.dispatchEvent(new Event('tz-pairing-changed'));
   return next;
 }
 
@@ -155,6 +156,7 @@ export function clearMobileConnectionConfig(): void {
   }
   volatileIdentity = '';
   volatileScope = '';
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event('tz-pairing-changed'));
 }
 
 export function hasConfiguredRemoteBackend(config?: MobileConnectionConfig): boolean {
@@ -242,4 +244,13 @@ export function setLocalBundleSha256(sha256: string): void {
   if (storage && sha256.trim()) {
     storage.setItem(LOCAL_BUNDLE_SHA_KEY, sha256.trim());
   }
+}
+
+/** React subscription; pairing changes invalidate the mounted private session tree. */
+export function subscribeMobilePairingScope(listener: () => void): () => void {
+  if (typeof window === 'undefined') return () => {};
+  const storageListener = (event: StorageEvent) => { if (!event.key || event.key === CONNECTION_STORAGE_KEY) listener(); };
+  window.addEventListener('storage', storageListener);
+  window.addEventListener('tz-pairing-changed', listener);
+  return () => { window.removeEventListener('storage', storageListener); window.removeEventListener('tz-pairing-changed', listener); };
 }
