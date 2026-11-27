@@ -489,6 +489,20 @@ async function main() {
 
   await clickMoreDrawerItem(page, '多资产雷达');
   await visit('/expert-radar', '02_radar.png');
+  const coverage = page.getByTestId('market-coverage-observation');
+  await coverage.getByText('1 / 0（仅样本内）', {exact:true}).waitFor({state:'visible', timeout:8000});
+  await coverage.getByText(/A股：未知/).waitFor({state:'visible', timeout:8000});
+  await coverage.getByText(/非真实市场数据/).waitFor({state:'visible', timeout:8000});
+  await coverage.screenshot({path:path.join(outDir,'02b_coverage_synthetic.png')});
+  screenshots.push({route:'/expert-radar#coverage',file:'02b_coverage_synthetic.png',scope:'LOCATOR_SCREENSHOT'});
+  await page.getByText('预测与复盘', {exact:true}).click();
+  const prediction=page.getByTestId('prediction-observation');
+  await prediction.getByText('0 / 1',{exact:true}).waitFor({state:'visible',timeout:8000});
+  await prediction.getByText('UNAVAILABLE',{exact:true}).waitFor({state:'visible',timeout:8000});
+  await prediction.getByText(/可评估数量未知/).waitFor({state:'visible',timeout:8000});
+  await prediction.getByText('未知',{exact:true}).waitFor({state:'visible',timeout:8000});
+  await prediction.screenshot({path:path.join(outDir,'02c_prediction_synthetic.png')});
+  screenshots.push({route:'/expert-radar#prediction',file:'02c_prediction_synthetic.png',scope:'LOCATOR_SCREENSHOT'});
 
   await clickBottomTab(page, '总览');
   await visit('/', '03_dashboard.png');

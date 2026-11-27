@@ -104,8 +104,7 @@ type ResolvedBackend = { baseUrl: string; channel: BackendChannel };
 let probeGeneration = 0;
 let authGeneration = 0;
 const authorizationListeners = new Set<() => void>();
-function advanceAuthorizationGeneration(): void {
-  authGeneration += 1;
+function notifyAuthorizationChange(): void {
   authorizationListeners.forEach(listener => {
     try { listener(); } catch { /* subscriber failures cannot restore authorization */ }
   });
@@ -166,7 +165,7 @@ export function subscribeBackendStatus(
 }
 
 export function resetApiClientState(): void {
-  advanceAuthorizationGeneration();
+  authGeneration += 1;
   cachedChannel = null;
   pendingProbe = null;
   probeGeneration += 1;
@@ -179,6 +178,7 @@ export function resetApiClientState(): void {
     lastError: null,
     remoteBundleSha256: null,
   };
+  notifyAuthorizationChange();
 }
 
 export function shouldUseRemoteDualChannel(): boolean {
@@ -310,11 +310,12 @@ export async function resolveActiveBackendBase(forceRefresh = false): Promise<Re
 }
 
 function rejectAuthorization(scope: string, status: number): never {
-  advanceAuthorizationGeneration();
+  authGeneration += 1;
   cachedChannel = null;
   pendingProbe = null;
   probeGeneration += 1;
   clearOfflineSnapshots(scope);
+  notifyAuthorizationChange();
   emitStatus({ lastError: `设备鉴权或访问受限（HTTP ${status}），已停用当前离线快照` });
   throw new HttpStatusError(status, `设备鉴权或访问受限（HTTP ${status}）`, true);
 }

@@ -55,7 +55,7 @@ export function marketCoverageState(value: unknown, now: number, cached: boolean
   if (value == null) return {status:'UNAVAILABLE'};
   if (!record(value) || value.research_only !== true || value.execution_allowed !== false || value.formal_admission !== false
       || !['UNAVAILABLE','INVALID','OBSERVED_WARN','PARTIAL_WARN','STALE'].includes(String(value.status))
-      || !text(value.reason) || !Array.isArray(value.rows) || value.rows.length > 4 || !value.rows.every(validRow)
+      || !text(value.reason) || !(unknown(value.source_ref) || text(value.source_ref)) || !Array.isArray(value.rows) || value.rows.length > 4 || !value.rows.every(validRow)
       || !Array.isArray(value.industries) || value.industries.length > 10 || !value.industries.every(r =>
         record(r) && text(r.code) && text(r.industry) && number(r.long_price_return_pct) && r.long_price_return_pct < 0
         && number(r.short_price_return_pct) && r.short_price_return_pct > 0)
@@ -162,6 +162,8 @@ export function PredictionObservationPanel() {
   const [error,setError]=useState('');
   const [busy,setBusy]=useState(true);
   const [revision,setRevision]=useState(0);
+  const [clock,setClock]=useState(Date.now);
+  useEffect(() => {const timer=setInterval(()=>setClock(Date.now()),30_000); return ()=>clearInterval(timer);},[]);
   const request=useRef<AbortController|null>(null);
   useEffect(() => {
     const unsubscribe=subscribeApiAuthorizationChanges(() => {
@@ -180,6 +182,6 @@ export function PredictionObservationPanel() {
     return ()=>ac.abort();
   },[revision]);
   return <Card title="预测与复盘 · 已封存公开对照" extra={<button type="button" disabled={busy} onClick={()=>setRevision(x=>x+1)}>重新读取</button>}>
-    {busy ? <p role="status">读取留存回执中…</p> : error ? <p role="alert">{error}</p> : <PredictionObservationContent value={value}/>}
+    {busy ? <p role="status">读取留存回执中…</p> : error ? <p role="alert">{error}</p> : <PredictionObservationContent value={value} clock={clock}/>}
   </Card>;
 }

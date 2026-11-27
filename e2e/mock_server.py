@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+from datetime import datetime, timedelta, timezone
 import hashlib
 import hmac
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -454,8 +455,45 @@ def _research_payload(subject_id: str) -> dict[str, Any]:
     }
 
 
-def _radar_payload() -> dict[str, Any]:
+def _prediction_observation_fixture() -> dict[str, Any]:
+    # Synthetic UI fixture only; never a real receipt, account, or forecast.
     return {
+        "scope": "RETAINED_PUBLIC_CONTROL_NOT_PRIVATE_EVENT_LEDGER",
+        "evaluated_at": "2020-01-08T08:00:00Z",
+        "model_validation_status": "NOT_VALIDATED", "probability_calibrated": False,
+        "private_event_chain_verified": False, "original_vendor_bytes_verified": False,
+        "research_only": True, "execution_allowed": False, "decision_authority": False,
+        "model_promotion_allowed": False,
+        "pilot": {"status": "RETAINED_TERMINAL", "normalized_receipt_pins_match": True,
+                  "first_attempt_provenance_reverified_at_runtime": False, "retry_authorized": False,
+                  "target": "2020-01-07", "symbol": "000001", "direction": "UP", "outcome_status": "UNAVAILABLE",
+                  "selected_count": 1, "evaluable_count": 0, "accuracy": None, "flat_accuracy": None,
+                  "observed_at": "2020-01-07T08:00:00Z", "accuracy_bounds": [0, 1],
+                  "paired_diagnostics": {"selected_paired_accuracy_delta_bounds": [-1, 1]}},
+        "cohort": {"status": "REGISTERED_RECEIPTS_NOT_CHECKED", "protocol_pin_matches": True,
+                   "receipt_index_verified": False, "activation_authorized": False,
+                   "retry_authorized": False, "backfill_authorized": False,
+                   "first": "2020-01-09", "last": "2020-02-05", "symbols": ["000001", "000002"],
+                   "expected_sessions": 20, "expected_slots": 40,
+                   "first_planning_at": "2020-01-08T00:00:00Z", "evaluable_count": None},
+    }
+
+
+def _radar_payload() -> dict[str, Any]:
+    observed = datetime.now(timezone(timedelta(hours=8))) - timedelta(seconds=2)
+    return {
+        "market_coverage": {
+            "status": "PARTIAL_WARN", "observed_day": observed.date().isoformat(),
+            "oldest_log_at": observed.isoformat(), "latest_log_at": observed.isoformat(),
+            "source_ref": "DEMO_SYNTHETIC", "reason": "合成回执测试，非真实市场数据",
+            "research_only": True, "execution_allowed": False, "formal_admission": False,
+            "rows": [{"asset": "ETF", "denominator": 10, "available": 8, "eligible": 5, "matches": 2,
+                      "comparison_day": (observed.date() - timedelta(days=1)).isoformat(),
+                      "observed_day_dated_rows": 1, "observed_day_eligible": 1, "observed_day_matches": 0,
+                      "scope_note": "DEMO_SYNTHETIC", "source_run": 1}],
+            "asset_issues": [{"asset": "A股", "status": "UNAVAILABLE"}],
+            "industries": [], "industry_dates": [],
+        },
         "as_of": "2026-11-13",
         "turnaround_candidates": [
             {
@@ -1849,6 +1887,9 @@ def create_server(args: argparse.Namespace) -> ThreadingHTTPServer:
 
                 if path == "/api/workbench":
                     self._send_json(200, _workbench_payload())
+                    return
+                if path == "/api/research-observations/prediction":
+                    self._send_json(200, _prediction_observation_fixture())
                     return
                 if path == "/api/radar":
                     self._send_json(200, _radar_payload())
