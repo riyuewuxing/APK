@@ -102,6 +102,10 @@ function createRequestSignal(path: string, signal: AbortSignal | null | undefine
 
 type ResolvedBackend = { baseUrl: string; channel: BackendChannel };
 let probeGeneration = 0;
+let authGeneration = 0;
+function assertAuthGeneration(epoch: number): void {
+  if (epoch !== authGeneration) throw new HttpStatusError(401, '鉴权状态已变化，丢弃旧响应', true);
+}
 let pendingProbe: { scope: string; promise: Promise<ResolvedBackend> } | null = null;
 
 let cachedChannel: {
@@ -352,6 +356,7 @@ export async function apiRequestJson<T>(
 ): Promise<T> {
   buildApiUrl(path, '');
   const scope = getMobileCacheScope();
+  const authEpoch = authGeneration;
   const method = options?.method ?? 'GET';
   const allowCache = (options?.fallbackToCache ?? true) && method === 'GET' && isCacheableExpertEndpoint(path);
   const postHeaders =
@@ -359,6 +364,7 @@ export async function apiRequestJson<T>(
 
   const tryReadCache = (fallbackReason: string): T => {
     assertPairingScope(scope);
+    assertAuthGeneration(authEpoch);
     if (allowCache) {
       const snap = readOfflineSnapshot<T>(path, scope);
       if (snap) {
@@ -386,8 +392,10 @@ export async function apiRequestJson<T>(
     });
 
     assertPairingScope(scope);
+    assertAuthGeneration(authEpoch);
     if (!response.ok) {
       if (response.status === 401 || response.status === 403) {
+        ++authGeneration;
         cachedChannel = null;
         clearOfflineSnapshots(scope);
         emitStatus({ lastError: `设备鉴权或访问受限（HTTP ${response.status}），已停用当前离线快照` });
@@ -404,6 +412,7 @@ export async function apiRequestJson<T>(
     try { payload = (await response.json()) as T; }
     catch { throw new HttpStatusError(response.status, '后端 JSON 响应无效，不能用旧缓存掩盖错误'); }
     assertPairingScope(scope);
+    assertAuthGeneration(authEpoch);
     if (channel !== 'offline' && statusSnapshot.channel === 'offline') {
       emitStatus({ channel, activeBaseUrl: baseUrl, offlineSnapshotFetchedAt: null, lastError: null });
     }
@@ -432,16 +441,25 @@ export async function apiRequestText(
   options?: { signal?: AbortSignal; timeoutMs?: number }
 ): Promise<string> {
   const scope = getMobileCacheScope();
+  const authEpoch = authGeneration;
   const { response } = await apiFetch(path, {
     method: 'GET',
     signal: options?.signal,
     timeoutMs: options?.timeoutMs,
   });
+  assertPairingScope(scope);
+  assertAuthGeneration(authEpoch);
   if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      ++authGeneration;
+      cachedChannel = null;
+      clearOfflineSnapshots(scope);
+    }
     const detail = await response.text().catch(() => '');
     throw new Error(`HTTP ${response.status} (${path}): ${detail.slice(0, 160)}`);
   }
   const result = await response.text();
   assertPairingScope(scope);
+  assertAuthGeneration(authEpoch);
   return result;
 }

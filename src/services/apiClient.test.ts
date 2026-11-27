@@ -330,3 +330,28 @@ describe('R09 pairing and transport isolation', () => {
     localStorage.setItem(key,JSON.stringify({...entry,fetched_at:'2020-01-01T00:00:00Z',scope:undefined}));expect(readOfflineSnapshot('/api/workbench')).toBeNull();
   });
 });
+
+
+describe('R09 late authorization response invalidation', () => {
+  it('discards an earlier success if another request invalidates authorization', async () => {
+    vi.stubGlobal('localStorage', createMemoryStorage());
+    clearMobileConnectionConfig();
+    resetApiClientState();
+    let finish!: (data: unknown) => void;
+    let started!: () => void;
+    const headerRead = new Promise<void>(resolve => { started = resolve; });
+    const body = new Promise<unknown>(resolve => { finish = resolve; });
+    vi.stubGlobal('fetch', vi.fn(async (url: string) => url === '/api/workbench'
+      ? { ok: true, status: 200, json: () => { started(); return body; } }
+      : { ok: false, status: 401, text: async () => '' }));
+    try {
+      const late = apiRequestJson('/api/workbench');
+      await headerRead;
+      await expect(apiRequestJson('/api/denied')).rejects.toMatchObject({ name: 'AuthError' });
+      finish({ account: 'obsolete synthetic account' });
+      await expect(late).rejects.toMatchObject({ name: 'AuthError' });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});

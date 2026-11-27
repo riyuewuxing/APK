@@ -1,8 +1,8 @@
 {
   "schema": "stage5_reviewed_public_projection_v1",
-  "private_source_commit": "40dd9587e96eff09bd426405d4c34f6ac602c061",
-  "public_base_commit": "87c1447b7133d816d78cb95adc263f2c3ca60384",
-  "scope": "Mixed-source reviewed public read-only frontend projection: pairing cache isolation, evidence freshness, and explicit unreviewed comparison gaps. Mock comparison rows are synthetic; no private account or backend records, credentials or full private parity. Adds native OTA activation receipts/readiness, public UI integration and synthetic emulator assertion; no private backend parity. Four-dimensional comparison display contract and synthetic positive/negative UI tests only; no private comparison admission or account payload projected. Withdraws expired comparison summary along with matrix; synthetic freshness regression. Mobile same-scope single-flight health resolver, bounded timeout and synthetic pairing contention regressions; existing emulator assertions unchanged.; asset-specific metrics header distinguishes observations and conditional calculations. R08: bounded descriptive reference group UI projection; synthetic desktop/mobile browser test, no live account or AI data. R08 read-only cockpit and generic deferred research UI gate, synthetic tests only; no private AI implementation or account records. R08: pairing-bound display and explicit completed-read browser assertions. R09: reviewed pairing namespace and API transport hardening, synthetic tests; exact action commits and least privileges.",
+  "private_source_commit": "a4c88c4f37a5ddd1122f07c60fe843cc485ac153",
+  "public_base_commit": "cbfe83070dd875d536a4f1cc085f50c67894040a",
+  "scope": "Mixed-source reviewed public read-only frontend projection: pairing cache isolation, evidence freshness, and explicit unreviewed comparison gaps. Mock comparison rows are synthetic; no private account or backend records, credentials or full private parity. Adds native OTA activation receipts/readiness, public UI integration and synthetic emulator assertion; no private backend parity. Four-dimensional comparison display contract and synthetic positive/negative UI tests only; no private comparison admission or account payload projected. Withdraws expired comparison summary along with matrix; synthetic freshness regression. Mobile same-scope single-flight health resolver, bounded timeout and synthetic pairing contention regressions; existing emulator assertions unchanged.; asset-specific metrics header distinguishes observations and conditional calculations. R08: bounded descriptive reference group UI projection; synthetic desktop/mobile browser test, no live account or AI data. R08 read-only cockpit and generic deferred research UI gate, synthetic tests only; no private AI implementation or account records. R08: pairing-bound display and explicit completed-read browser assertions. R09: reviewed pairing namespace and API transport hardening, synthetic tests; exact action commits and least privileges. R10: existing public transport projection includes late-authorization response regression, synthetic only.",
   "files": [
     {
       "path": ".github/workflows/build-apk.yml",
@@ -153,14 +153,14 @@
     },
     {
       "path": "src/services/apiClient.test.ts",
-      "public_blob_sha": "b1c75ccb71eb3fde4a8ea752e9341bd73399b5bb",
-      "source_commit": "5f136112ca866278f960607badffe11798866b5c",
+      "public_blob_sha": "a8c4b08542df6b41d133f3b0cd387425d4cdbbac",
+      "source_commit": "a4c88c4f37a5ddd1122f07c60fe843cc485ac153",
       "projection_kind": "EXACT_REVIEWED_SOURCE"
     },
     {
       "path": "src/services/apiClient.ts",
-      "public_blob_sha": "09ca7c36ae8a58368535c754f0c6d3727914994c",
-      "source_commit": "5f136112ca866278f960607badffe11798866b5c",
+      "public_blob_sha": "b253ad757141c0b83b530afdea7f1eff29ad968a",
+      "source_commit": "a4c88c4f37a5ddd1122f07c60fe843cc485ac153",
       "projection_kind": "REVIEWED_ADAPTED_SUBSET"
     },
     {
@@ -229,5 +229,5 @@
     }
   ],
   "omission": "Public shell deliberately excludes desktop paper-book editing, private AI context, account records and private backend. No claim of full private parity.",
-  "prior_projection_source_commit": "5f136112ca866278f960607badffe11798866b5c"
+  "prior_projection_source_commit": "40dd9587e96eff09bd426405d4c34f6ac602c061"
 }
