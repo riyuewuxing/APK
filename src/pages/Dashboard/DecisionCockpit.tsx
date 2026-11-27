@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getMobileCacheScope } from '@/platform/runtime';
 import { apiRequestJson } from '@/services/apiClient';
 import { Card, Button } from '@/components/common';
 import { projectDecisionCockpit } from './cockpitModel';
@@ -8,7 +9,16 @@ import styles from './DecisionCockpit.module.css';
 export function DecisionCockpit() {
   const navigate = useNavigate();
   const [revision, setRevision] = useState(0);
-  const [read, setRead] = useState<{scheduler:unknown;account:unknown;observedAt:number;revision:number}|null>(null);
+  const [clock, setClock] = useState(() => Date.now());
+  const scope = getMobileCacheScope();
+  useEffect(() => {
+    const tick = () => setClock(Date.now());
+    const timer = window.setInterval(tick, 1000);
+    window.addEventListener('storage', tick);
+    window.addEventListener('focus', tick);
+    return () => { window.clearInterval(timer); window.removeEventListener('storage', tick); window.removeEventListener('focus', tick); };
+  }, []);
+  const [read, setRead] = useState<{scheduler:unknown;account:unknown;observedAt:number;revision:number;scope:string}|null>(null);
   useEffect(() => {
     const controller = new AbortController();
     const options = { signal:controller.signal, fallbackToCache:false, timeoutMs:15000 };
@@ -16,16 +26,16 @@ export function DecisionCockpit() {
       apiRequestJson<unknown>('/api/scheduler/status', options),
       apiRequestJson<unknown>('/api/workbench', options),
     ]).then(([scheduler,account]) => {
-      if (controller.signal.aborted) return;
+      if (controller.signal.aborted || scope !== getMobileCacheScope()) return;
       setRead({scheduler:scheduler.status==='fulfilled'?scheduler.value:null,
-        account:account.status==='fulfilled'?account.value:null, observedAt:Date.now(),revision});
+        account:account.status==='fulfilled'?account.value:null, observedAt:Date.now(),revision,scope});
     });
     return () => controller.abort();
-  }, [revision]);
-  const current = read?.revision === revision ? read : null;
-  const view = projectDecisionCockpit(current?.scheduler,current?.account,Date.now());
+  }, [revision,scope]);
+  const current = read?.revision === revision && read.scope === scope ? read : null;
+  const view = projectDecisionCockpit(current?.scheduler,current?.account,Math.max(clock,current?.observedAt ?? 0));
   return (
-    <section aria-label="今日决策驾驶舱" data-testid="decision-cockpit">
+    <section aria-label="今日决策驾驶舱" data-testid="decision-cockpit" data-read-revision={current?.revision ?? "pending"}>
       <Card title="今日决策驾驶舱" extra={<Button size="sm" onClick={()=>setRevision(n=>n+1)}>重新读取</Button>}>
         <div className={styles.meta}>
           中国交易日期 {view.today} · {current ? '读取时间 '+new Date(current.observedAt).toLocaleTimeString('zh-CN',{timeZone:'Asia/Shanghai',hour12:false})+' CST' : '读取中'}

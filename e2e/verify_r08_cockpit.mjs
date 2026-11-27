@@ -64,7 +64,8 @@ try{
     fs.writeFileSync(path.join(out,name),shot);
     const digest=crypto.createHash('sha256').update(shot).digest('hex');
     if(shot.length<=150000){const b64=shot.toString('base64');for(let i=0;i<b64.length;i+=5000)console.log('R08_COCKPIT_IMAGE '+name+' '+(i/5000)+' '+b64.slice(i,i+5000));}
-    const refresh=()=>cockpit.getByRole('button',{name:'重新读取',exact:true}).click();
+    let revision=0;
+    const refresh=async()=>{revision++;await cockpit.getByRole('button',{name:'重新读取',exact:true}).click();await page.locator(`[data-testid=decision-cockpit][data-read-revision="${revision}"]`).waitFor({state:'visible',timeout:15000});};
     mode='offline';await refresh();await waitText(scanCard,'候选数未知');await waitText(review,'覆盖未知');await waitText(account,'股票台账记录为空');
     if((await scanCard.innerText()).includes('候选 0'))throw Error('stale zero shown');
     mode='ready';await refresh();await waitText(ai,'非事实准入');await waitText(account,'bbbbbbbbbbbb');

@@ -1,8 +1,8 @@
 {
   "schema": "stage5_reviewed_public_projection_v1",
-  "private_source_commit": "6010dc6d9009a9ca6b4667af159a8a73ddc8b597",
-  "public_base_commit": "b9adecba3f60c2528e33ede6aaeec85509fb0b03",
-  "scope": "Mixed-source reviewed public read-only frontend projection: pairing cache isolation, evidence freshness, and explicit unreviewed comparison gaps. Mock comparison rows are synthetic; no private account or backend records, credentials or full private parity. Adds native OTA activation receipts/readiness, public UI integration and synthetic emulator assertion; no private backend parity. Four-dimensional comparison display contract and synthetic positive/negative UI tests only; no private comparison admission or account payload projected. Withdraws expired comparison summary along with matrix; synthetic freshness regression. Mobile same-scope single-flight health resolver, bounded timeout and synthetic pairing contention regressions; existing emulator assertions unchanged.; asset-specific metrics header distinguishes observations and conditional calculations. R08: bounded descriptive reference group UI projection; synthetic desktop/mobile browser test, no live account or AI data. R08 read-only cockpit and generic deferred research UI gate, synthetic tests only; no private AI implementation or account records.",
+  "private_source_commit": "2a5a670f1f01ab6ad20ba7010cbdf4f50e1fc263",
+  "public_base_commit": "d7f898e3e738d75cc63c52cf105e0612691b01b3",
+  "scope": "Mixed-source reviewed public read-only frontend projection: pairing cache isolation, evidence freshness, and explicit unreviewed comparison gaps. Mock comparison rows are synthetic; no private account or backend records, credentials or full private parity. Adds native OTA activation receipts/readiness, public UI integration and synthetic emulator assertion; no private backend parity. Four-dimensional comparison display contract and synthetic positive/negative UI tests only; no private comparison admission or account payload projected. Withdraws expired comparison summary along with matrix; synthetic freshness regression. Mobile same-scope single-flight health resolver, bounded timeout and synthetic pairing contention regressions; existing emulator assertions unchanged.; asset-specific metrics header distinguishes observations and conditional calculations. R08: bounded descriptive reference group UI projection; synthetic desktop/mobile browser test, no live account or AI data. R08 read-only cockpit and generic deferred research UI gate, synthetic tests only; no private AI implementation or account records. R08: pairing-bound display and explicit completed-read browser assertions.",
   "files": [
     {
       "path": ".github/workflows/build-apk.yml",
@@ -30,7 +30,7 @@
     },
     {
       "path": "e2e/verify_r08_cockpit.mjs",
-      "public_blob_sha": "03cd63e7c805f916493738d3bcc39a7dfabde024",
+      "public_blob_sha": "93eeeccb35539e0edd30cddbca0083dd1e292fb6",
       "source_commit": null,
       "projection_kind": "PUBLIC_ONLY_SYNTHETIC_TEST"
     },
@@ -72,8 +72,8 @@
     },
     {
       "path": "src/pages/Dashboard/DecisionCockpit.tsx",
-      "public_blob_sha": "acf72bc440b7ee28d8897a106f2b75b1ac803227",
-      "source_commit": "6010dc6d9009a9ca6b4667af159a8a73ddc8b597",
+      "public_blob_sha": "96a439357e10b1c00974a35c834208c91404ec38",
+      "source_commit": "2a5a670f1f01ab6ad20ba7010cbdf4f50e1fc263",
       "projection_kind": "EXACT_REVIEWED_SOURCE"
     },
     {
