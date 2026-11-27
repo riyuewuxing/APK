@@ -599,6 +599,8 @@ export interface RadarFundEntry {
 
 export interface RadarState {
   as_of: string;
+  market_coverage?: import('@/components/expert/ObservationPanels').MarketCoverageView;
+  observation_transport_cached?: boolean;
   turnaround_candidates: RadarStockEntry[];
   value_trap_warnings: RadarStockEntry[];
   stock_discovery: RadarStockEntry[];
@@ -865,8 +867,10 @@ export async function fetchResearchCard(
   return guardSubjectReview(card, Date.now(), responseFresh);
 }
 
-export function fetchRadar(signal?: AbortSignal): Promise<RadarState> {
-  return requestJson<RadarState>('/api/radar', { signal });
+export async function fetchRadar(signal?: AbortSignal): Promise<RadarState> {
+  let cached = false;
+  const data = await apiRequestJson<RadarState>('/api/radar', {signal, onCacheFallback: () => {cached = true;}});
+  return {...data, observation_transport_cached: cached};
 }
 
 export function fetchAudit(signal?: AbortSignal): Promise<AuditState> {

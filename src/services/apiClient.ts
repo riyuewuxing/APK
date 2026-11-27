@@ -103,6 +103,17 @@ function createRequestSignal(path: string, signal: AbortSignal | null | undefine
 type ResolvedBackend = { baseUrl: string; channel: BackendChannel };
 let probeGeneration = 0;
 let authGeneration = 0;
+const authorizationListeners = new Set<() => void>();
+function advanceAuthorizationGeneration(): void {
+  authGeneration += 1;
+  authorizationListeners.forEach(listener => {
+    try { listener(); } catch { /* subscriber failures cannot restore authorization */ }
+  });
+}
+export function subscribeApiAuthorizationChanges(listener: () => void): () => void {
+  authorizationListeners.add(listener);
+  return () => { authorizationListeners.delete(listener); };
+}
 function assertAuthGeneration(epoch: number): void {
   if (epoch !== authGeneration) throw new HttpStatusError(401, '鉴权状态已变化，丢弃旧响应', true);
 }
@@ -155,7 +166,7 @@ export function subscribeBackendStatus(
 }
 
 export function resetApiClientState(): void {
-  authGeneration += 1;
+  advanceAuthorizationGeneration();
   cachedChannel = null;
   pendingProbe = null;
   probeGeneration += 1;
@@ -298,6 +309,30 @@ export async function resolveActiveBackendBase(forceRefresh = false): Promise<Re
   }
 }
 
+function rejectAuthorization(scope: string, status: number): never {
+  advanceAuthorizationGeneration();
+  cachedChannel = null;
+  pendingProbe = null;
+  probeGeneration += 1;
+  clearOfflineSnapshots(scope);
+  emitStatus({ lastError: `设备鉴权或访问受限（HTTP ${status}），已停用当前离线快照` });
+  throw new HttpStatusError(status, `设备鉴权或访问受限（HTTP ${status}）`, true);
+}
+
+// Same epoch for buffered HTTP, streaming frames and deferred UI commits.
+export function captureApiAuthorizationGuard() {
+  const scope = getMobileCacheScope();
+  const epoch = authGeneration;
+  const assertCurrent = () => { assertPairingScope(scope); assertAuthGeneration(epoch); };
+  return {
+    assertCurrent,
+    rejectIfDenied: (status: number) => {
+      assertCurrent();
+      if (status === 401 || status === 403) rejectAuthorization(scope, status);
+    },
+  };
+}
+
 function buildAuthHeaders(
   existingHeaders: HeadersInit | undefined,
   channel: BackendChannel,
@@ -327,12 +362,12 @@ async function withApiResponse<T>(
   const { skipAuth, forceProbe, timeoutMs = requestTimeoutForPath(path), ...fetchInit } = options ?? {};
   buildApiUrl(path, '');
   const scope = getMobileCacheScope();
-  const epoch = authGeneration;
+  const guard = captureApiAuthorizationGuard();
   const requestSignal = createRequestSignal(path, fetchInit.signal, timeoutMs);
   const check = () => {
     requestSignal.signal.throwIfAborted();
     assertPairingScope(scope);
-    assertAuthGeneration(epoch);
+    guard.assertCurrent();
   };
   let abortListener: () => void = () => undefined;
   const aborted = new Promise<never>((_resolve, reject) => {
@@ -353,6 +388,7 @@ async function withApiResponse<T>(
       redirect: 'error', cache: 'no-store',
     });
     check();
+    guard.rejectIfDenied(response.status);
     return await consume({ response, baseUrl, channel });
   };
   try {
@@ -421,15 +457,7 @@ export async function apiRequestJson<T>(
     assertPairingScope(scope);
     assertAuthGeneration(authEpoch);
     if (!response.ok) {
-      if (response.status === 401 || response.status === 403) {
-        ++authGeneration;
-        cachedChannel = null;
-        clearOfflineSnapshots(scope);
-        emitStatus({ lastError: `设备鉴权或访问受限（HTTP ${response.status}），已停用当前离线快照` });
-      }
-      // Denial is authoritative at headers; never wait on its body.
-      const detail = response.status === 401 || response.status === 403 ? ''
-        : await response.text().catch(() => '');
+      const detail = await response.text().catch(() => '');
       throw new HttpStatusError(
         response.status,
         `HTTP ${response.status} (${path}): ${detail.slice(0, 160)}`,
@@ -481,14 +509,8 @@ export async function apiRequestText(
   assertPairingScope(scope);
   assertAuthGeneration(authEpoch);
   if (!response.ok) {
-    if (response.status === 401 || response.status === 403) {
-      ++authGeneration;
-      cachedChannel = null;
-      clearOfflineSnapshots(scope);
-    }
-    const denied = response.status === 401 || response.status === 403;
-    const detail = denied ? '' : await response.text().catch(() => '');
-    throw new HttpStatusError(response.status, `HTTP ${response.status} (${path}): ${detail.slice(0, 160)}`, denied);
+    const detail = await response.text().catch(() => '');
+    throw new HttpStatusError(response.status, `HTTP ${response.status} (${path}): ${detail.slice(0, 160)}`);
   }
   return await response.text();
   });

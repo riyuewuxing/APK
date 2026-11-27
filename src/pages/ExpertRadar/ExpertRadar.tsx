@@ -12,12 +12,15 @@ import {
   type RadarState,
   type RadarStockEntry,
 } from '@/services/expertApi';
+import { MarketCoveragePanel, PredictionObservationPanel } from '@/components/expert/ObservationPanels';
+import { subscribeApiAuthorizationChanges } from '@/services/apiClient';
 import styles from './ExpertRadar.module.css';
 
 const RADAR_TABS = [
   { key: 'stock_radar', label: 'A股困境反转 & 价值陷阱' },
   { key: 'etf_fund_radar', label: 'ETF 与公募基金专属透镜' },
   { key: 'audit_ledger', label: 'ClaimLedger & 数据源审计' },
+  { key: 'prediction_observations', label: '预测与复盘' },
 ];
 
 const LENS_LABEL_ZH: Record<string, string> = {
@@ -52,6 +55,9 @@ export function ExpertRadar() {
   const [claimStatusFilter, setClaimStatusFilter] = useState<string>('ALL');
   const [showAllDiscovery, setShowAllDiscovery] = useState<boolean>(false);
   const [syncingPit, setSyncingPit] = useState<boolean>(false);
+  useEffect(() => subscribeApiAuthorizationChanges(() => {
+    setRadar(null); setAudit(null); setErrorMsg('鉴权状态已变化，请重新加载。');
+  }), []);
 
   const handleSyncPit = async () => {
     setSyncingPit(true);
@@ -232,6 +238,10 @@ export function ExpertRadar() {
         </Card>
       )}
 
+      {activeTab === 'prediction_observations' && <PredictionObservationPanel />}
+      {radar && (activeTab === 'stock_radar' || activeTab === 'etf_fund_radar') &&
+        <MarketCoveragePanel coverage={radar.market_coverage} cached={radar.observation_transport_cached} />}
+
       {activeTab === 'stock_radar' && radar && (
         <div className={styles.sectionStack}>
           <div className={styles.semanticsBanner}>
@@ -268,7 +278,7 @@ export function ExpertRadar() {
           </Card>
 
           <Card
-            title={`CN_A_STOCK 全市场发现池 (${radar.stock_discovery.length})`}
+            title={`CN_A_STOCK 历史机会账本投影 (${radar.stock_discovery.length})`}
             extra={
               radar.stock_discovery.length > 5 ? (
                 <Button

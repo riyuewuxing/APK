@@ -8,6 +8,8 @@ import {
 import {
   apiRequestJson,
   apiRequestText,
+  captureApiAuthorizationGuard,
+  subscribeApiAuthorizationChanges,
   getBackendStatusSnapshot,
   resetApiClientState,
   resolveActiveBackendBase,
@@ -417,5 +419,40 @@ describe('R12 response body deadlines', () => {
     resetApiClientState();
     finish({ stale: true });
     await rejected;
+  });
+});
+
+
+describe('R12 shared authorization epoch for deferred research', () => {
+  beforeEach(() => { vi.stubGlobal('localStorage', createMemoryStorage()); clearMobileConnectionConfig(); resetApiClientState(); });
+  afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+  it('denial invalidates stream and deferred commit guards and notifies current views', async () => {
+    const previous = captureApiAuthorizationGuard();
+    const listener = vi.fn();
+    const unsubscribe = subscribeApiAuthorizationChanges(listener);
+    try {
+      vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, status: 401, text: async () => '' })));
+      await expect(apiRequestJson('/api/denied')).rejects.toMatchObject({name: 'AuthError'});
+      expect(() => previous.assertCurrent()).toThrow('鉴权状态已变化');
+      expect(listener).toHaveBeenCalledOnce();
+      expect(() => captureApiAuthorizationGuard().assertCurrent()).not.toThrow();
+    } finally { unsubscribe(); }
+  });
+  it('a stream denial clears same-scope cached observations and invalidates other reads', () => {
+    saveMobileConnectionConfig({lanUrl:'https://fixture.example',deviceToken:'synthetic-token-00000000'});
+    writeOfflineSnapshot('/api/workbench',{old:true},{sourceUrl:'fixture'});
+    const streaming = captureApiAuthorizationGuard();
+    const other = captureApiAuthorizationGuard();
+    expect(() => streaming.rejectIfDenied(403)).toThrow('403');
+    expect(() => other.assertCurrent()).toThrow('鉴权状态已变化');
+    expect(readOfflineSnapshot('/api/workbench')).toBeNull();
+  });
+  it('a superseded stream denial cannot invalidate a newer pairing', () => {
+    saveMobileConnectionConfig({lanUrl:'https://fixture.example',deviceToken:'synthetic-token-00000000'});
+    const old = captureApiAuthorizationGuard();
+    saveMobileConnectionConfig({lanUrl:'https://other.example',deviceToken:'synthetic-token-00000001'});
+    const current = captureApiAuthorizationGuard();
+    expect(() => old.rejectIfDenied(401)).toThrow('配对已变更');
+    expect(() => current.assertCurrent()).not.toThrow();
   });
 });
