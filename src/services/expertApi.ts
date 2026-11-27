@@ -526,6 +526,8 @@ export interface DeepResearchCard {
   decision_packet: OrthogonalDecisionPacket;
   account_snapshot_id?: string | null;
   account_snapshot_status?: string | null;
+  account_snapshots?: Record<string, { snapshot_id?: string | null; status?: string | null }>;
+  request_mode?: string;
   turnaround_report: TurnaroundAndTrapReport | null;
   asset_specific_metrics: Record<string, string>;
   opportunity_cost_matrix: OpportunityCostMatrixRow[];
@@ -855,14 +857,18 @@ export function guardSubjectReview(card: DeepResearchCard, now: number, response
 export async function fetchResearchCard(
   subjectId: string,
   signal?: AbortSignal,
-  assetType?: string
+  assetType?: string,
+  liveStock = false
 ): Promise<DeepResearchCard> {
   const normalized = normalizeResearchSubjectId(subjectId);
-  const query = assetType ? `?asset_type=${encodeURIComponent(assetType)}` : '';
+  const params = new URLSearchParams();
+  if (assetType) params.set('asset_type', assetType);
+  if (liveStock) params.set('live_stock', 'true');
+  const query = params.size ? `?${params}` : '';
   let responseFresh = true;
   const card = await apiRequestJson<DeepResearchCard>(
     `/api/research/${encodeURIComponent(normalized)}${query}`,
-    { signal, onCacheFallback: () => { responseFresh = false; } }
+    { signal, fallbackToCache: !liveStock, onCacheFallback: () => { responseFresh = false; } }
   );
   return guardSubjectReview(card, Date.now(), responseFresh);
 }

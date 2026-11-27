@@ -380,6 +380,22 @@ async function main() {
   await page.locator('[data-testid="debate-synthesis-panel"]').waitFor({ state: 'visible', timeout: 8000 });
   await page.locator('[data-testid="debate-perspective-OPPORTUNITY_COST"]').waitFor({ state: 'visible', timeout: 8000 });
   await visit('/expert#debate', '01c_expert_debate.png');
+  // R13: fixture-only mode echo and independent account version mismatch.
+  await page.goto(`${args.baseUrl}/expert?symbol=600900&asset_type=STOCK&live_stock=true`, {waitUntil:'domcontentloaded'});
+  await page.getByTestId('research-request-mode').filter({hasText:'显式最新股票观察请求'}).waitFor({state:'visible',timeout:10000});
+  await page.getByRole('button',{name:'返回默认研究'}).click();
+  await page.getByTestId('research-request-mode').filter({hasText:'默认研究入口'}).waitFor({state:'visible',timeout:10000});
+  const mismatchedFundRoute = async route => {
+    const response = await route.fetch();
+    const payload = await response.json();
+    payload.account_snapshots['FND-TIANTIAN-002'].snapshot_id = 'c'.repeat(64);
+    await route.fulfill({response,json:payload});
+  };
+  await page.route('**/api/research/600900?asset_type=STOCK', mismatchedFundRoute);
+  await page.goto(`${args.baseUrl}/expert?symbol=600900&asset_type=STOCK`, {waitUntil:'domcontentloaded'});
+  await page.getByText('研究卡与账户快照不一致，请刷新工作台', {exact:false}).first().waitFor({state:'visible',timeout:10000});
+  await page.unroute('**/api/research/600900?asset_type=STOCK', mismatchedFundRoute);
+
 
   await page.goto(`${args.baseUrl}/expert?symbol=600900&tab=opportunity`, { waitUntil: 'domcontentloaded' });
   const pendingComparison = page.locator('tr').filter({hasText: '[DEMO] 等待情景'});

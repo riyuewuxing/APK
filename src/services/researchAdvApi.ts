@@ -101,6 +101,10 @@ export interface DebateSynthesisReport {
   research_action?: string | null;
   admission_state?: string;
   account_snapshot_id?: string | null;
+  account_snapshots?: Record<string, { snapshot_id?: string | null; status?: string | null }>;
+  request_mode?: string;
+  subject_review_status?: string | null;
+  subject_review_valid_until?: string | null;
   composite_conviction_score: number;
   minesweeper_overall_status: string;
   minesweeper_red_flags: number;
@@ -162,11 +166,15 @@ export function fetchFilingMinesweeper(
 export function fetchDebateSynthesis(
   subjectId: string,
   signal?: AbortSignal,
-  assetType?: string
+  assetType?: string,
+  liveStock = false
 ): Promise<DebateSynthesisReport> {
-  const qs = assetType ? `?asset_type=${encodeURIComponent(assetType)}` : '';
+  const params = new URLSearchParams();
+  if (assetType) params.set('asset_type', assetType);
+  if (liveStock) params.set('live_stock', 'true');
+  const qs = params.size ? `?${params}` : '';
   return apiRequestJson<DebateSynthesisReport>(
     `/api/research/${encodeURIComponent(subjectId)}/debate${qs}`,
-    { signal }
+    { signal, fallbackToCache: false }
   );
 }

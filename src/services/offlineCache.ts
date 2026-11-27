@@ -39,6 +39,7 @@ function getSafeStorage(): Storage | null {
 
 export function isCacheableExpertEndpoint(path: string): boolean {
   const clean = path.split('?')[0] ?? path;
+  if (new URLSearchParams(path.split('?')[1] ?? '').get('live_stock') === 'true') return false;
   if (clean === '/api/quantstats/tearsheet' && path.includes('format=html')) {
     return false;
   }

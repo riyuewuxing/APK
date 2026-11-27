@@ -2,11 +2,11 @@
   "schema": "stage5_reviewed_public_projection_v1",
   "private_source_commit": "a4c88c4f37a5ddd1122f07c60fe843cc485ac153",
   "public_base_commit": "cbfe83070dd875d536a4f1cc085f50c67894040a",
-  "scope": "Mixed-source reviewed public read-only frontend projection: pairing cache isolation, evidence freshness, and explicit unreviewed comparison gaps. Mock comparison rows are synthetic; no private account or backend records, credentials or full private parity. Adds native OTA activation receipts/readiness, public UI integration and synthetic emulator assertion; no private backend parity. Four-dimensional comparison display contract and synthetic positive/negative UI tests only; no private comparison admission or account payload projected. Withdraws expired comparison summary along with matrix; synthetic freshness regression. Mobile same-scope single-flight health resolver, bounded timeout and synthetic pairing contention regressions; existing emulator assertions unchanged.; asset-specific metrics header distinguishes observations and conditional calculations. R08: bounded descriptive reference group UI projection; synthetic desktop/mobile browser test, no live account or AI data. R08 read-only cockpit and generic deferred research UI gate, synthetic tests only; no private AI implementation or account records. R08: pairing-bound display and explicit completed-read browser assertions. R09: reviewed pairing namespace and API transport hardening, synthetic tests; exact action commits and least privileges. R10: existing public transport projection includes late-authorization response regression, synthetic only. R12: generic buffered HTTP deadline through response body, cancellation and reset; synthetic tests only. R12: shared authorization generation, public observation panel, independent partial coverage and retained prediction display; public synthetic fixtures only.",
+  "scope": "Mixed-source reviewed public read-only frontend projection: pairing cache isolation, evidence freshness, and explicit unreviewed comparison gaps. Mock comparison rows are synthetic; no private account or backend records, credentials or full private parity. Adds native OTA activation receipts/readiness, public UI integration and synthetic emulator assertion; no private backend parity. Four-dimensional comparison display contract and synthetic positive/negative UI tests only; no private comparison admission or account payload projected. Withdraws expired comparison summary along with matrix; synthetic freshness regression. Mobile same-scope single-flight health resolver, bounded timeout and synthetic pairing contention regressions; existing emulator assertions unchanged.; asset-specific metrics header distinguishes observations and conditional calculations. R08: bounded descriptive reference group UI projection; synthetic desktop/mobile browser test, no live account or AI data. R08 read-only cockpit and generic deferred research UI gate, synthetic tests only; no private AI implementation or account records. R08: pairing-bound display and explicit completed-read browser assertions. R09: reviewed pairing namespace and API transport hardening, synthetic tests; exact action commits and least privileges. R10: existing public transport projection includes late-authorization response regression, synthetic only. R12: generic buffered HTTP deadline through response body, cancellation and reset; synthetic tests only. R12: shared authorization generation, public observation panel, independent partial coverage and retained prediction display; public synthetic fixtures only. R13: independent observation-version binding and explicit route, same-response sandboxed report, synthetic fixtures only.",
   "files": [
     {
       "path": ".github/workflows/build-apk.yml",
-      "public_blob_sha": "f60de327f17d5e8081e5509bc91249001d0704ea",
+      "public_blob_sha": "5d2ed69b138e4f392a5ac8a55b8273bce906e7c1",
       "source_commit": null,
       "projection_kind": "PUBLIC_ONLY"
     },
@@ -18,9 +18,9 @@
     },
     {
       "path": "e2e/mock_server.py",
-      "public_blob_sha": "86021f5974e20c26d969546361df47fdff137678",
+      "public_blob_sha": "38a85a0cb560dd2e534ca3f980b5a496d416749d",
       "source_commit": null,
-      "projection_kind": "PUBLIC_ONLY_SYNTHETIC_TEST"
+      "projection_kind": "PUBLIC_ONLY"
     },
     {
       "path": "e2e/verify_emulator_apk.mjs",
@@ -30,9 +30,9 @@
     },
     {
       "path": "e2e/verify_playwright_mobile.mjs",
-      "public_blob_sha": "4e0a95cc3d4b997c1054c2764ed35299cb89ccd2",
+      "public_blob_sha": "a7ab8c6fccf08c14e7ab905d58c4404c292de1d3",
       "source_commit": null,
-      "projection_kind": "PUBLIC_ONLY_SYNTHETIC_TEST"
+      "projection_kind": "PUBLIC_ONLY"
     },
     {
       "path": "e2e/verify_r08_cockpit.mjs",
@@ -126,9 +126,9 @@
     },
     {
       "path": "src/pages/ExpertWorkbench/ExpertWorkbench.tsx",
-      "public_blob_sha": "909e012a7120f257a0ec134e6a4f0b58d7af0843",
-      "source_commit": "a2bb069b0b82b653e84c6f4e9d3bebd4539e327a",
-      "projection_kind": "REVIEWED_ADAPTED_SUBSET"
+      "public_blob_sha": "bf5c42608955aba5d8418a84ec202112c9e1d587",
+      "source_commit": null,
+      "projection_kind": "PUBLIC_ONLY"
     },
     {
       "path": "src/pages/Settings/MobileSyncCard.tsx",
@@ -158,6 +158,18 @@
       "public_blob_sha": "c8d4baeef5b898c68a39074b29a6889e45eec970",
       "source_commit": "40dd9587e96eff09bd426405d4c34f6ac602c061",
       "projection_kind": "EXACT_REVIEWED_SOURCE"
+    },
+    {
+      "path": "src/services/accountObservationBinding.test.ts",
+      "public_blob_sha": "03b80fefe3da0e95f0cf050be0d0b7fdc4d7d063",
+      "source_commit": null,
+      "projection_kind": "PUBLIC_ONLY"
+    },
+    {
+      "path": "src/services/accountObservationBinding.ts",
+      "public_blob_sha": "9fdda49f1924f919a4295a3d89def944ec773986",
+      "source_commit": null,
+      "projection_kind": "PUBLIC_ONLY"
     },
     {
       "path": "src/services/analysis.test.ts",
@@ -201,20 +213,21 @@
     },
     {
       "path": "src/services/expertApi.ts",
-      "public_blob_sha": "3295a74af570a6574c65067b733646b4dbde3811",
+      "public_blob_sha": "a81c8a5922ffc055c5adebeb089f9413058464c5",
       "source_commit": null,
-      "projection_kind": "REVIEWED_PUBLIC_GENERIC_R12"
+      "projection_kind": "PUBLIC_ONLY"
     },
     {
       "path": "src/services/offlineCache.ts",
-      "public_blob_sha": "f34be38c33ea4090af3d0aceb305858f5951c603",
-      "source_commit": "5f136112ca866278f960607badffe11798866b5c",
-      "projection_kind": "EXACT_REVIEWED_SOURCE"
+      "public_blob_sha": "606125e6217c9dad5c195e31ae61e30744a7633a",
+      "source_commit": null,
+      "projection_kind": "PUBLIC_ONLY"
     },
     {
       "path": "src/services/researchAdvApi.ts",
-      "public_blob_sha": "280ecf401f348646b9ed5af368badd80c605177f",
-      "source_commit": "4550f18a6289fe5ccc57f953ea92130e18ed8d27"
+      "public_blob_sha": "36e8947f78d90f881008fe71c22e2ab68fa6a4e1",
+      "source_commit": null,
+      "projection_kind": "PUBLIC_ONLY"
     },
     {
       "path": "src/services/researchStream.test.ts",

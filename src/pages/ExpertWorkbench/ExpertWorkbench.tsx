@@ -39,11 +39,9 @@ import {
   comparisonEvidenceReady,
   comparisonAdvantageLabel,
   extractSubjectSixDigits,
-  fetchQuantStatsHtml,
   fetchQuantStatsJson,
   fetchResearchCard,
   fetchWorkbench,
-  getQuantStatsHtmlUrl,
   normalizeResearchSubjectId,
   openNativeKlineWindow,
   toStockDetailRoute,
@@ -66,7 +64,8 @@ import {
   fetchDebateSynthesis,
   type DebateSynthesisReport,
 } from '@/services/researchAdvApi';
-import { shouldUseRemoteDualChannel } from '@/services/apiClient';
+import { subscribeApiAuthorizationChanges } from '@/services/apiClient';
+import { versionsMatch, researchBindingMatches, reportBindingMatches, debateReviewCurrent } from '@/services/accountObservationBinding';
 import { isMobileViewport, isNativeApp } from '@/platform/runtime';
 import { registerModalCloser } from '@/platform/modalStack';
 import { formatNumber, formatPercent, getChangeColorClass, normalizeStockCode } from '@/utils/format';
@@ -123,9 +122,8 @@ export function ExpertWorkbench() {
     searchParams.get('symbol')?.trim() || searchParams.get('subject')?.trim() || '600900'
   );
   const activeAssetType = searchParams.get('asset_type')?.trim() || undefined;
-  const activeRequestKey = activeAssetType
-    ? `${activeSubjectId}::${activeAssetType}`
-    : activeSubjectId;
+  const liveStock = searchParams.get('live_stock') === 'true';
+  const activeRequestKey = `${activeSubjectId}::${activeAssetType ?? ''}::${liveStock ? 'current' : 'reference'}`;
 
   const [workbench, setWorkbench] = useState<WorkbenchState | null>(null);
   const [wbError, setWbError] = useState<string | null>(null);
@@ -151,11 +149,6 @@ export function ExpertWorkbench() {
     accountId: string;
     data: QuantStatsSummary | null;
   }>({ accountId: '', data: null });
-  const [qsHtmlState, setQsHtmlState] = useState<{
-    accountId: string;
-    html: string | null;
-    error: boolean;
-  }>({ accountId: '', html: null, error: false });
   const [xrayAccount, setXrayAccount] = useState<XRayAccountId>('ALL');
   const [xrayState, setXrayState] = useState<{
     accountId: XRayAccountId | '';
@@ -168,9 +161,17 @@ export function ExpertWorkbench() {
     error: string | null;
   }>({ requestKey: '', data: null, error: null });
   const hideDesktopNativeControls = isNativeApp() || isMobileViewport();
-  const useAuthenticatedHtmlSrcDoc = shouldUseRemoteDualChannel();
 
   const activeAccountSnapshotId = workbench?.stock_account.snapshot_id ?? null;
+  const fundVersion = workbench?.fund_account.snapshot_id ?? null;
+  const expectedVersions = {'STK-ALIPAY-001': activeAccountSnapshotId, 'FND-TIANTIAN-002': fundVersion};
+  const [reviewClock, setReviewClock] = useState(Date.now);
+  useEffect(() => { if (detailTab !== 'debate') return; const timer = window.setInterval(() => setReviewClock(Date.now()),1000); return () => window.clearInterval(timer); }, [detailTab]);
+  useEffect(() => subscribeApiAuthorizationChanges(() => {
+    setWorkbench(null); setWbError('账户授权已变化，请重新加载工作台');
+    setResearchState({subjectId:'',card:null,error:'账户授权已变化'});
+    setQsState({accountId:'',data:null}); setXrayState({accountId:'',data:null,error:null}); setDebateState({requestKey:'',data:null,error:null});
+  }), []);
   const accountBlocked = Boolean(wbError && /ACCOUNT_CORRUPTED|台账损坏/.test(wbError));
   const holdingSdkCodes = useMemo(() => {
     if (!workbench?.stock_account.positions.length) return [];
@@ -267,7 +268,7 @@ export function ExpertWorkbench() {
   // 加载当前标的深度研究卡
   useEffect(() => {
     const controller = new AbortController();
-    fetchResearchCard(activeSubjectId, controller.signal, activeAssetType)
+    fetchResearchCard(activeSubjectId, controller.signal, activeAssetType, liveStock)
       .then((card) => {
         if (controller.signal.aborted) return;
         setResearchState({ subjectId: activeRequestKey, card, error: null });
@@ -281,11 +282,11 @@ export function ExpertWorkbench() {
         });
       });
     return () => controller.abort();
-  }, [activeSubjectId, activeAssetType, activeRequestKey, activeAccountSnapshotId]);
+  }, [activeSubjectId, activeAssetType, activeRequestKey, activeAccountSnapshotId, fundVersion, liveStock]);
 
   // 按需加载选中账户 QuantStats 报告 JSON（避免非该 Tab 时提前计算）
   useEffect(() => {
-    if (detailTab !== 'quantstats') return;
+    if (detailTab !== 'quantstats' && !qsModalOpen) return;
     const controller = new AbortController();
     setQsState({ accountId: '', data: null });
     fetchQuantStatsJson(accountTab, controller.signal)
@@ -299,32 +300,14 @@ export function ExpertWorkbench() {
         }
       });
     return () => controller.abort();
-  }, [accountTab, detailTab, activeAccountSnapshotId]);
-
-  // 移动端/远程双通道下通过 Bearer 鉴权拉取 QuantStats HTML 供 iframe srcDoc 渲染
-  useEffect(() => {
-    if (!useAuthenticatedHtmlSrcDoc) return;
-    if (detailTab !== 'quantstats' && !qsModalOpen) return;
-    const controller = new AbortController();
-    setQsHtmlState({ accountId: '', html: null, error: false });
-    fetchQuantStatsHtml(accountTab, controller.signal)
-      .then((html) => {
-        if (controller.signal.aborted) return;
-        setQsHtmlState({ accountId: accountTab, html, error: false });
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) {
-          setQsHtmlState({ accountId: accountTab, html: null, error: true });
-        }
-      });
-    return () => controller.abort();
-  }, [accountTab, detailTab, qsModalOpen, useAuthenticatedHtmlSrcDoc, activeAccountSnapshotId]);
+  }, [accountTab, detailTab, activeAccountSnapshotId, fundVersion, qsModalOpen]);
 
   useEffect(() => {
     if (detailTab !== 'xray') return;
     const controller = new AbortController();
     fetchPortfolioXRay(xrayAccount, controller.signal)
       .then((res) => {
+        if (controller.signal.aborted) return;
         setXrayState({ accountId: xrayAccount, data: res, error: null });
       })
       .catch((err: unknown) => {
@@ -336,13 +319,14 @@ export function ExpertWorkbench() {
         });
       });
     return () => controller.abort();
-  }, [detailTab, xrayAccount, activeAccountSnapshotId]);
+  }, [detailTab, xrayAccount, activeAccountSnapshotId, fundVersion]);
 
   useEffect(() => {
     if (detailTab !== 'debate') return;
     const controller = new AbortController();
-    fetchDebateSynthesis(activeSubjectId, controller.signal, activeAssetType)
+    fetchDebateSynthesis(activeSubjectId, controller.signal, activeAssetType, liveStock)
       .then((res) => {
+        if (controller.signal.aborted) return;
         setDebateState({ requestKey: activeRequestKey, data: res, error: null });
       })
       .catch((err: unknown) => {
@@ -354,7 +338,7 @@ export function ExpertWorkbench() {
         });
       });
     return () => controller.abort();
-  }, [detailTab, activeSubjectId, activeAssetType, activeRequestKey, activeAccountSnapshotId]);
+  }, [detailTab, activeSubjectId, activeAssetType, activeRequestKey, activeAccountSnapshotId, fundVersion, liveStock]);
 
   useEffect(() => {
     if (!qsModalOpen) {
@@ -364,7 +348,7 @@ export function ExpertWorkbench() {
   }, [qsModalOpen]);
 
   const researchLoading = researchState.subjectId !== activeRequestKey;
-  const researchSnapshotMismatch = Boolean(activeAccountSnapshotId && researchState.card && researchState.card.account_snapshot_id !== activeAccountSnapshotId);
+  const researchSnapshotMismatch = Boolean(researchState.card && !researchBindingMatches(researchState.card, expectedVersions, liveStock));
   const researchCard = useGuardedSubjectReview(
     researchState.subjectId === activeRequestKey && !accountBlocked && !researchSnapshotMismatch ? researchState.card : null
   );
@@ -373,19 +357,18 @@ export function ExpertWorkbench() {
     : researchState.subjectId === activeRequestKey ? researchState.error : null;
 
   const qsLoading = qsState.accountId !== accountTab;
-  const expectedReportSnapshot = accountTab === 'STK-ALIPAY-001' ? activeAccountSnapshotId : workbench?.fund_account.snapshot_id;
   const quantStats = qsState.accountId === accountTab && !(accountTab === 'STK-ALIPAY-001' && accountBlocked)
-    && (!expectedReportSnapshot || qsState.data?.account_snapshot_id === expectedReportSnapshot) ? qsState.data : null;
-  const quantStatsHtml =
-    qsHtmlState.accountId === accountTab ? qsHtmlState.html : null;
-  const quantStatsHtmlError =
-    qsHtmlState.accountId === accountTab ? qsHtmlState.error : false;
+    && qsState.data && reportBindingMatches(qsState.data, accountTab, expectedVersions) ? qsState.data : null;
+  const rawReportHtml = quantStats?.manifest?.status === 'PASS' ? quantStats.html_content : null;
+  const quantStatsHtml = rawReportHtml ? '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; img-src data:; style-src \'unsafe-inline\'; script-src \'unsafe-inline\'">' + rawReportHtml : null;
   const xrayLoading = detailTab === 'xray' && xrayState.accountId !== xrayAccount;
   const xrayUsesStock = xrayAccount !== 'FND-TIANTIAN-002';
-  const xrayData = xrayState.accountId === xrayAccount && !(xrayUsesStock && (accountBlocked || (activeAccountSnapshotId && xrayState.data?.account_snapshots?.['STK-ALIPAY-001']?.snapshot_id !== activeAccountSnapshotId))) ? xrayState.data : null;
+  const requiredXray = xrayAccount === 'ALL' ? Object.keys(expectedVersions) : [xrayAccount];
+  const xrayData = xrayState.accountId === xrayAccount && xrayState.data?.account_id === xrayAccount && !(xrayUsesStock && accountBlocked)
+    && versionsMatch(xrayState.data.account_snapshots, expectedVersions, requiredXray) ? xrayState.data : null;
   const xrayError = xrayState.accountId === xrayAccount ? xrayState.error : null;
   const debateLoading = detailTab === 'debate' && debateState.requestKey !== activeRequestKey;
-  const debateData = debateState.requestKey === activeRequestKey && !accountBlocked && (!activeAccountSnapshotId || debateState.data?.account_snapshot_id === activeAccountSnapshotId) ? debateState.data : null;
+  const debateData = debateState.requestKey === activeRequestKey && !accountBlocked && debateState.data && researchBindingMatches(debateState.data, expectedVersions, liveStock) && debateReviewCurrent(debateState.data, Math.max(reviewClock, Date.now())) ? debateState.data : null;
   const debateError = debateState.requestKey === activeRequestKey ? debateState.error : null;
   const symbolInputValue =
     symbolDraft.subject === activeSubjectId ? symbolDraft.text : activeSubjectId;
@@ -859,17 +842,6 @@ export function ExpertWorkbench() {
                         >
                           窗口内全屏展开报告
                         </Button>
-                        {!hideDesktopNativeControls && (
-                          <Button
-                            size="md"
-                            variant="secondary"
-                            icon={<ExternalLink size={15} />}
-                            disabled={!quantStats}
-                            onClick={() => window.open(getQuantStatsHtmlUrl(accountTab), '_blank')}
-                          >
-                            新窗口打开全屏 Tear-Sheet
-                          </Button>
-                        )}
                       </div>
                     </div>
                     <div className={styles.subSectionTitle}>固定参考权重，价格或单位净值变化；现金零收益假设，非含分红总回报。</div>
@@ -918,27 +890,9 @@ export function ExpertWorkbench() {
                           />
                         </div>
 
-                        {useAuthenticatedHtmlSrcDoc ? (
-                          quantStatsHtml ? (
-                            <iframe
-                              id="quantstats-native-iframe"
-                              title={`QuantStats TearSheet ${accountTab}`}
-                              className={styles.tearFrame}
-                              srcDoc={quantStatsHtml}
-                            />
-                          ) : quantStatsHtmlError ? (
-                            <Empty description="当前处于离线或远程主机未连通状态，无法获取 QuantStats 完整 HTML 报告（上方指标仍可离线阅读）。" />
-                          ) : (
-                            <Loading text="正在通过加密通道加载 QuantStats HTML 报告..." />
-                          )
-                        ) : (
-                          <iframe
-                            id="quantstats-native-iframe"
-                            title={`QuantStats TearSheet ${accountTab}`}
-                            className={styles.tearFrame}
-                            src={getQuantStatsHtmlUrl(accountTab)}
-                          />
-                        )}
+                        {quantStatsHtml ? (
+                          <iframe id="quantstats-native-iframe" title={`QuantStats TearSheet ${accountTab}`} className={styles.tearFrame} sandbox="allow-scripts" srcDoc={quantStatsHtml} />
+                        ) : <Empty description="当前账户版本没有同一响应的 HTML 报告" />}
                       </>
                     )}
                   </div>
@@ -1703,6 +1657,8 @@ export function ExpertWorkbench() {
                     <ProvenancePill badge={researchCard.header_badge} />
                   </div>
                   <div className={styles.subjectActions}>
+                    <span data-testid="research-request-mode" className={styles.assetTag}>{liveStock ? '显式最新股票观察请求 · 非实时准入' : '默认研究入口 · 可能包含历史参考'}</span>
+                    {researchCard.asset_type === 'STOCK' && <Button size="sm" variant="secondary" onClick={() => { const params = new URLSearchParams(searchParams); if(liveStock) params.delete('live_stock'); else {params.set('live_stock','true'); params.set('asset_type','STOCK');} navigate({pathname:'/expert',search:`?${params}`}); }}>{liveStock ? '返回默认研究' : '请求最新股票观察'}</Button>}
                     {stockRoute && (
                       <>
                         <Button
@@ -1948,27 +1904,9 @@ export function ExpertWorkbench() {
                 关闭 (ESC)
               </Button>
             </div>
-            {useAuthenticatedHtmlSrcDoc ? (
-              quantStatsHtml ? (
-                <iframe
-                  title={`QuantStats TearSheet Fullscreen ${accountTab}`}
-                  className={styles.tearModalFrame}
-                  srcDoc={quantStatsHtml}
-                />
-              ) : quantStatsHtmlError ? (
-                <div style={{ padding: 24 }}>
-                  <Empty description="当前未连通桌面主机，暂无法加载 QuantStats HTML TearSheet。" />
-                </div>
-              ) : (
-                <Loading text="正在加载完整 QuantStats TearSheet..." />
-              )
-            ) : (
-              <iframe
-                title={`QuantStats TearSheet Fullscreen ${accountTab}`}
-                className={styles.tearModalFrame}
-                src={getQuantStatsHtmlUrl(accountTab)}
-              />
-            )}
+            {quantStatsHtml ? (
+              <iframe title={`QuantStats TearSheet Fullscreen ${accountTab}`} className={styles.tearModalFrame} sandbox="allow-scripts" srcDoc={quantStatsHtml} />
+            ) : <Empty description="当前账户版本没有同一响应的 HTML 报告" />}
           </div>
         </div>,
         document.body

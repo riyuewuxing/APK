@@ -108,7 +108,7 @@ def _workbench_payload() -> dict[str, Any]:
             "as_of": "2026-11-13",
             "reference_close_date": "2026-11-13",
             "book_status": "SEEDED_DEFAULT",
-            "snapshot_id": "DEMO-STOCK-SNAPSHOT",
+            "snapshot_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
             "valuation_basis": "DEMO_REFERENCE_ONLY",
             "total_asset": 200000.0,
             "frozen_baseline_total": 195000.0,
@@ -161,7 +161,7 @@ def _workbench_payload() -> dict[str, Any]:
             "as_of": "2026-11-13",
             "pending_as_of": "2026-11-13",
             "book_status": "FROZEN_HISTORICAL",
-            "snapshot_id": "DEMO-FUND-SNAPSHOT",
+            "snapshot_id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
             "total_asset": 100000.0,
             "daily_pnl": 650.0,
             "holding_pnl": 4800.0,
@@ -209,7 +209,7 @@ def _workbench_payload() -> dict[str, Any]:
     }
 
 
-def _research_payload(subject_id: str) -> dict[str, Any]:
+def _research_payload(subject_id: str, live_stock: bool = False) -> dict[str, Any]:
     clean = subject_id.upper()
     asset_type = "STOCK"
     name = f"演示标的 {clean}"
@@ -251,8 +251,10 @@ def _research_payload(subject_id: str) -> dict[str, Any]:
         "subject_name": name,
         "asset_type": asset_type,
         "as_of": "2026-11-13",
-        "account_snapshot_id": "DEMO-STOCK-SNAPSHOT",
+        "account_snapshot_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "account_snapshot_status": "SEEDED_DEFAULT",
+        "request_mode": "EXPLICIT_CURRENT_STOCK_REQUEST" if live_stock else "DEFAULT_REFERENCE_ROUTE",
+        "account_snapshots": {"STK-ALIPAY-001": {"snapshot_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "status": "SEEDED_DEFAULT"}, "FND-TIANTIAN-002": {"snapshot_id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "status": "FROZEN_HISTORICAL"}},
         "decision_packet": {
             "subject_id": subject_id,
             "subject_name": name,
@@ -585,7 +587,7 @@ def _quantstats_payload() -> dict[str, Any]:
         "as_of": "2026-11-13",
         "total_asset_cny": 200000.0,
         "holding_count": 2,
-        "account_snapshot_id": "DEMO-STOCK-SNAPSHOT",
+        "account_snapshot_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         "performance_basis": "SYNTHETIC_UI_FIXTURE_ONLY",
         "benchmark_label": "沪深300(合成)",
         "quantstats_version": "0.0.64-demo",
@@ -613,7 +615,8 @@ def _quantstats_payload() -> dict[str, Any]:
             "drawdown_pct": [-round((i % 3) * 0.8, 2) for i in range(15)],
         },
         "pypfopt_summary": _research_payload("600900")["portfolio_correlation"],
-        "manifest": {"demo": True},
+        "manifest": {"demo": True, "status": "PASS"},
+        "html_content": "<html><body><h3>QuantStats Synthetic Demo Tearsheet</h3></body></html>",
         "html_path": "/api/quantstats/html",
         "research_only": True,
         "execution_allowed": False,
@@ -1154,7 +1157,7 @@ def _minesweeper_payload(subject_id: str, asset_type_hint: str = "") -> dict[str
     }
 
 
-def _debate_payload(subject_id: str, asset_type_hint: str = "") -> dict[str, Any]:
+def _debate_payload(subject_id: str, asset_type_hint: str = "", live_stock: bool = False) -> dict[str, Any]:
     clean = subject_id.strip().upper() or "600900"
     return {
         "subject_id": clean,
@@ -1166,7 +1169,9 @@ def _debate_payload(subject_id: str, asset_type_hint: str = "") -> dict[str, Any
         "action_label_zh": "未准入 · 等待（模拟）",
         "research_action": "BUY",
         "admission_state": "NOT_ADMITTED",
-        "account_snapshot_id": "DEMO-STOCK-SNAPSHOT",
+        "account_snapshot_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "request_mode": "EXPLICIT_CURRENT_STOCK_REQUEST" if live_stock else "DEFAULT_REFERENCE_ROUTE",
+        "account_snapshots": {"STK-ALIPAY-001": {"snapshot_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "status": "SEEDED_DEFAULT"}, "FND-TIANTIAN-002": {"snapshot_id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "status": "FROZEN_HISTORICAL"}},
         "composite_conviction_score": 71.0,
         "minesweeper_overall_status": "RED_FLAG",
         "minesweeper_red_flags": 1,
@@ -1925,8 +1930,8 @@ def create_server(args: argparse.Namespace) -> ThreadingHTTPServer:
                         self._send_json(400, {"detail": f"Unsupported account_id={account_id!r}"})
                     else:
                         payload["account_snapshots"] = {
-                            "STK-ALIPAY-001": {"snapshot_id": "DEMO-STOCK-SNAPSHOT", "as_of": "2026-11-13", "status": "SEEDED_DEFAULT"},
-                            "FND-TIANTIAN-002": {"snapshot_id": "DEMO-FUND-SNAPSHOT", "as_of": "2026-11-13", "status": "FROZEN_HISTORICAL"},
+                            "STK-ALIPAY-001": {"snapshot_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "as_of": "2026-11-13", "status": "SEEDED_DEFAULT"},
+                            "FND-TIANTIAN-002": {"snapshot_id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb", "as_of": "2026-11-13", "status": "FROZEN_HISTORICAL"},
                         }
                         self._send_json(200, payload)
                     return
@@ -1941,11 +1946,11 @@ def create_server(args: argparse.Namespace) -> ThreadingHTTPServer:
                 if path.startswith("/api/research/") and path.endswith("/debate"):
                     sid = path.removeprefix("/api/research/").removesuffix("/debate") or "600900"
                     hint = (query.get("asset_type") or [""])[0]
-                    self._send_json(200, _debate_payload(sid, hint))
+                    self._send_json(200, _debate_payload(sid, hint, (query.get("live_stock") or ["false"])[0] == "true"))
                     return
                 if path.startswith("/api/research/"):
                     sid = path.removeprefix("/api/research/") or "600900"
-                    self._send_json(200, _research_payload(sid))
+                    self._send_json(200, _research_payload(sid, (query.get("live_stock") or ["false"])[0] == "true"))
                     return
                 if path == "/api/market/global-pulse":
                     self._send_json(200, _global_pulse_payload())
