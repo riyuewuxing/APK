@@ -161,13 +161,13 @@
     },
     {
       "path": "src/services/accountObservationBinding.test.ts",
-      "public_blob_sha": "03b80fefe3da0e95f0cf050be0d0b7fdc4d7d063",
+      "public_blob_sha": "29c7e122f7274a8ca295f0217988ccdcb7becdcf",
       "source_commit": null,
       "projection_kind": "PUBLIC_ONLY"
     },
     {
       "path": "src/services/accountObservationBinding.ts",
-      "public_blob_sha": "9fdda49f1924f919a4295a3d89def944ec773986",
+      "public_blob_sha": "ebae86379f44ab60828c537a1e0ff134ced71e05",
       "source_commit": null,
       "projection_kind": "PUBLIC_ONLY"
     },

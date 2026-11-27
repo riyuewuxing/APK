@@ -32,5 +32,7 @@ describe('independent account observation versions',()=>{
   expect(debateReviewCurrent(r,t-1)).toBe(true);
   expect(debateReviewCurrent(r,t)).toBe(false);
   expect(debateReviewCurrent({...r,subject_review_valid_until:null},t)).toBe(false);
+  expect(debateReviewCurrent({...r,subject_review_status:'SUBJECT_REVIEW_EXPIRED'},t-1)).toBe(false);
+  expect(debateReviewCurrent({...r,subject_review_status:'SUBJECT_REVIEW_INVALID'},t-1)).toBe(false);
  });
 });
