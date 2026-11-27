@@ -1,14 +1,14 @@
 {
   "schema": "stage5_reviewed_public_projection_v1",
-  "private_source_commit": "a2bb069b0b82b653e84c6f4e9d3bebd4539e327a",
-  "public_base_commit": "9de2d3102947d3433eea169cb0a946312fa5baf8",
-  "scope": "Mixed-source reviewed public read-only frontend projection: pairing cache isolation, evidence freshness, and explicit unreviewed comparison gaps. Mock comparison rows are synthetic; no private account or backend records, credentials or full private parity. Adds native OTA activation receipts/readiness, public UI integration and synthetic emulator assertion; no private backend parity. Four-dimensional comparison display contract and synthetic positive/negative UI tests only; no private comparison admission or account payload projected. Withdraws expired comparison summary along with matrix; synthetic freshness regression. Mobile same-scope single-flight health resolver, bounded timeout and synthetic pairing contention regressions; existing emulator assertions unchanged.; asset-specific metrics header distinguishes observations and conditional calculations.",
+  "private_source_commit": "ccabb067de48e831e416b8c531959133152bd571",
+  "public_base_commit": "c0b7c5537a159a634b291e293c8cdbedcdff5fa3",
+  "scope": "Mixed-source reviewed public read-only frontend projection: pairing cache isolation, evidence freshness, and explicit unreviewed comparison gaps. Mock comparison rows are synthetic; no private account or backend records, credentials or full private parity. Adds native OTA activation receipts/readiness, public UI integration and synthetic emulator assertion; no private backend parity. Four-dimensional comparison display contract and synthetic positive/negative UI tests only; no private comparison admission or account payload projected. Withdraws expired comparison summary along with matrix; synthetic freshness regression. Mobile same-scope single-flight health resolver, bounded timeout and synthetic pairing contention regressions; existing emulator assertions unchanged.; asset-specific metrics header distinguishes observations and conditional calculations. R08: bounded descriptive reference group UI projection; synthetic desktop/mobile browser test, no live account or AI data.",
   "files": [
     {
       "path": ".github/workflows/build-apk.yml",
-      "public_blob_sha": "b80c5108db544f8eec5f317045463d03fc703209",
+      "public_blob_sha": "cad9d11ca2daff1cc37a563dccaa1cc9a0e55417",
       "source_commit": null,
-      "projection_kind": "PUBLIC_ONLY"
+      "projection_kind": "PUBLIC_ONLY_SYNTHETIC_TEST"
     },
     {
       "path": "e2e/mock_server.py",
@@ -25,6 +25,12 @@
     {
       "path": "e2e/verify_playwright_mobile.mjs",
       "public_blob_sha": "763cb42906fedbf3c7d0e6094f0800877585888f",
+      "source_commit": null,
+      "projection_kind": "PUBLIC_ONLY_SYNTHETIC_TEST"
+    },
+    {
+      "path": "e2e/verify_r08_reference.mjs",
+      "public_blob_sha": "f9f21d34d3cdee9918c4bc6a1bf50f304bad4510",
       "source_commit": null,
       "projection_kind": "PUBLIC_ONLY_SYNTHETIC_TEST"
     },
@@ -48,8 +54,9 @@
     },
     {
       "path": "src/pages/EndOfDayPicker/EndOfDayPicker.tsx",
-      "public_blob_sha": "2e74539a45c2789d7a9eebf856ea5c0f7f72b3a3",
-      "source_commit": "4550f18a6289fe5ccc57f953ea92130e18ed8d27"
+      "public_blob_sha": "8ac5ebc85095c9ca2b0516d3788aa43df5372b41",
+      "source_commit": "ccabb067de48e831e416b8c531959133152bd571",
+      "projection_kind": "REVIEWED_ADAPTED_SUBSET"
     },
     {
       "path": "src/pages/ExpertWorkbench/ExpertWorkbench.tsx",
@@ -109,9 +116,16 @@
       "projection_kind": "REVIEWED_ADAPTED_SUBSET"
     },
     {
+      "path": "src/services/eodApi.test.ts",
+      "public_blob_sha": "771e6f80ee365caedd024249c2c0ef020bd1c0c8",
+      "source_commit": "ccabb067de48e831e416b8c531959133152bd571",
+      "projection_kind": "REVIEWED_ADAPTED_SUBSET"
+    },
+    {
       "path": "src/services/eodApi.ts",
-      "public_blob_sha": "885aebde9f72909063a93d67d40b1b5ae4c48998",
-      "source_commit": "4550f18a6289fe5ccc57f953ea92130e18ed8d27"
+      "public_blob_sha": "894905feaf1ba86e5870aafa6a9fd3be2dbe170f",
+      "source_commit": "ccabb067de48e831e416b8c531959133152bd571",
+      "projection_kind": "REVIEWED_ADAPTED_SUBSET"
     },
     {
       "path": "src/services/expertApi.test.ts",
@@ -143,5 +157,5 @@
     }
   ],
   "omission": "Public shell deliberately excludes desktop paper-book editing, private AI context, account records and private backend. No claim of full private parity.",
-  "prior_projection_source_commit": "3e749e0caa97f3d5276102696d02c337da2d58ae"
+  "prior_projection_source_commit": "a2bb069b0b82b653e84c6f4e9d3bebd4539e327a"
 }

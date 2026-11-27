@@ -59,7 +59,9 @@ import {
   type EodRegimeSnapshot,
   type EodJournalResponse,
   type EodAnalyzeItem,
-  type EodWinRateStats,
+  referenceCount,
+  referenceRate,
+  referenceGroups,
 } from '@/services/eodApi';
 import styles from './EndOfDayPicker.module.css';
 
@@ -81,9 +83,21 @@ type SortField = 'changePercent' | 'timelineAboveAvgRatio' | 'turnoverRate' | 'c
 type SortOrder = 'asc' | 'desc';
 type EodTab = 'screen' | 'history';
 
-function rawReferencePct(stats: EodWinRateStats, value: number | null, digits: number): string {
-  return stats.statistics_basis === 'RAW_REFERENCE_GROSS_NOT_TRADE_WIN_RATE'
-    && value != null && Number.isFinite(value) ? value.toFixed(digits) + '%' : 'N/A';
+function ReferenceGroupSummary({ journal, scheme }: { journal: EodJournalResponse; scheme: EodJournalResponse['stats']['schemes'][number] }) {
+  const groups = referenceGroups(journal.stats, scheme);
+  if (!groups) return <p className={styles.historyHint} data-testid="eod-reference-groups-unavailable">记录时间分组未知（旧版或不完整口径），不推断为零样本。</p>;
+  return (
+    <div data-testid="eod-reference-groups">
+      <p className={styles.historyHint}>按记录时间分组（仅描述性参考，均未验证预测能力）</p>
+      {groups.map(({ label, stats }) => (
+        <div key={label} className={styles.regimeBreakdown}>
+          <span className={styles.breakdownLabel}>{label} · {referenceCount(stats.sample_count)} 个样本</span>
+          <span className={styles.breakdownItem}>T+1 开盘 {referenceRate(stats, stats.t1_open_win_rate_pct, stats.t1_open_observation_count)} · 观察 {referenceCount(stats.t1_open_observation_count)}/{referenceCount(stats.sample_count)}</span>
+          <span className={styles.breakdownItem}>T+3 收盘 {referenceRate(stats, stats.t3_close_win_rate_pct, stats.t3_close_observation_count)} · 观察 {referenceCount(stats.t3_close_observation_count)}/{referenceCount(stats.sample_count)}</span>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 // ========== 常量 ==========
@@ -609,10 +623,13 @@ export function EndOfDayPicker() {
 
   const loadJournal = useCallback(async () => {
     setJournalBusy(true);
+    setJournalError(false);
     try {
       setJournal(await fetchEodJournal());
     } catch (error) {
       console.error('加载尾盘账本失败:', error);
+      setJournal(null);
+      setJournalError(true);
     } finally {
       setJournalBusy(false);
     }
@@ -645,6 +662,7 @@ export function EndOfDayPicker() {
   const [vettingBusy, setVettingBusy] = useState(false);
   const [journal, setJournal] = useState<EodJournalResponse | null>(null);
   const [journalBusy, setJournalBusy] = useState(false);
+  const [journalError, setJournalError] = useState(false);
 
   // 保存筛选条件（debounce：filters 随交互高频变化，不必每次都同步写盘）
   useEffect(() => {
@@ -944,10 +962,10 @@ export function EndOfDayPicker() {
 
   const handleTabChange = useCallback((tab: EodTab) => {
     setActiveTab(tab);
-    if (tab === 'history' && !journal) {
+    if (tab === 'history' && !journalBusy) {
       void loadJournal();
     }
-  }, [journal, loadJournal]);
+  }, [journalBusy, loadJournal]);
 
   return (
     <div className={styles.container}>
@@ -1069,6 +1087,11 @@ export function EndOfDayPicker() {
 
             {journalBusy && !journal ? (
               <p className={styles.emptyHint}>加载账本中…</p>
+            ) : journalError ? (
+              <div role="alert" className={styles.noResults} data-testid="eod-journal-unavailable">
+                <p>账本暂不可用，无法判断是否有历史记录。</p>
+                <button className={styles.settleBtn} onClick={() => void loadJournal()}>重新读取账本</button>
+              </div>
             ) : !journal || journal.stats.schemes.length === 0 ? (
               <div className={styles.noResults}>
                 <FolderOpen size={48} strokeWidth={1} />
@@ -1086,34 +1109,35 @@ export function EndOfDayPicker() {
                   {journal.stats.schemes.map((scheme) => (
                     <div key={scheme.scheme_name} className={styles.schemeStatCard}>
                       <h3 className={styles.schemeStatName}>{scheme.scheme_name}</h3>
-                      <p className={styles.historyHint}>旧口径排除：{scheme.overall.legacy_excluded_count ?? "未核实"}；未观察样本不按零计。</p>
+                      <p className={styles.historyHint}>混合记录时间汇总（非预测准确率） · 旧口径排除：{scheme.overall.legacy_excluded_count ?? "未核实"}；未观察样本不按零计。</p>
                       <div className={styles.winRateGrid}>
                         <div className={styles.winRateItem}>
                           <span>T+1 开盘上涨占比</span>
-                          <strong>{rawReferencePct(scheme.overall, scheme.overall.t1_open_win_rate_pct, 1)}</strong>
-                          <small>观察 {scheme.overall.t1_open_observation_count ?? 0}/{scheme.overall.sample_count}</small>
+                          <strong>{referenceRate(scheme.overall, scheme.overall.t1_open_win_rate_pct, scheme.overall.t1_open_observation_count, 1, true)}</strong>
+                          <small>观察 {referenceCount(scheme.overall.t1_open_observation_count)}/{scheme.overall.sample_count}</small>
                         </div>
                         <div className={styles.winRateItem}>
                           <span>T+1 收盘上涨占比</span>
-                          <strong>{rawReferencePct(scheme.overall, scheme.overall.t1_close_win_rate_pct, 1)}</strong>
-                          <small>观察 {scheme.overall.t1_close_observation_count ?? 0}/{scheme.overall.sample_count}</small>
+                          <strong>{referenceRate(scheme.overall, scheme.overall.t1_close_win_rate_pct, scheme.overall.t1_close_observation_count, 1, true)}</strong>
+                          <small>观察 {referenceCount(scheme.overall.t1_close_observation_count)}/{scheme.overall.sample_count}</small>
                         </div>
                         <div className={styles.winRateItem}>
                           <span>T+3 收盘上涨占比</span>
-                          <strong>{rawReferencePct(scheme.overall, scheme.overall.t3_close_win_rate_pct, 1)}</strong>
-                          <small>观察 {scheme.overall.t3_close_observation_count ?? 0}/{scheme.overall.sample_count}</small>
+                          <strong>{referenceRate(scheme.overall, scheme.overall.t3_close_win_rate_pct, scheme.overall.t3_close_observation_count, 1, true)}</strong>
+                          <small>观察 {referenceCount(scheme.overall.t3_close_observation_count)}/{scheme.overall.sample_count}</small>
                         </div>
                         <div className={styles.winRateItem}>
                           <span>平均开盘溢价</span>
-                          <strong>{rawReferencePct(scheme.overall, scheme.overall.avg_open_premium_pct, 2)}</strong>
+                          <strong>{referenceRate(scheme.overall, scheme.overall.avg_open_premium_pct, scheme.overall.t1_open_observation_count, 2, false)}</strong>
                         </div>
                       </div>
+                      <ReferenceGroupSummary journal={journal} scheme={scheme} />
                       {Object.keys(scheme.by_regime).length > 0 && (
                         <div className={styles.regimeBreakdown}>
                           <span className={styles.breakdownLabel}>按情绪分层：</span>
                           {Object.entries(scheme.by_regime).map(([r, st]) => (
                             <span key={r} className={styles.breakdownItem}>
-                              {REGIME_LABEL[r]?.text ?? r} T+1开盘 {rawReferencePct(st, st.t1_open_win_rate_pct, 0)}
+                              {REGIME_LABEL[r]?.text ?? r} T+1开盘 {referenceRate(st, st.t1_open_win_rate_pct, st.t1_open_observation_count, 0)}
                             </span>
                           ))}
                         </div>

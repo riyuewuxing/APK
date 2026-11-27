@@ -142,6 +142,8 @@ export interface EodWinRateStats {
 export interface EodSchemeStats {
   scheme_name: string;
   overall: EodWinRateStats;
+  same_day_server_recorded_reference?: EodWinRateStats;
+  retrospective_or_unverified_reference?: EodWinRateStats;
   by_regime: Record<string, EodWinRateStats>;
 }
 
@@ -151,6 +153,11 @@ export interface EodJournalResponse {
     generated_at: string;
     snapshot_count: number;
     candidate_count: number;
+    same_day_server_recorded_snapshot_count?: number;
+    retrospective_or_unverified_snapshot_count?: number;
+    statistics_scope?: 'MIXED_CLIENT_REFERENCE_NOT_VALIDATED_FORECAST';
+    model_validation_status?: 'NOT_VALIDATED';
+    probability_calibrated?: false;
     schemes: EodSchemeStats[];
     research_only: boolean;
     execution_allowed: boolean;
@@ -192,4 +199,32 @@ export function postEodJournalSettle(): Promise<{ changed: number; stats: EodJou
     method: 'POST',
     body: {},
   });
+}
+
+// These are descriptive reference prices, not admitted or validated forecasts.
+export function referenceCount(value: unknown): string {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? String(value) : '未知';
+}
+
+export function referenceRate(stats: EodWinRateStats, value: number | null, observed: number | undefined, digits = 1, isRate = true): string {
+  return stats.statistics_basis === 'RAW_REFERENCE_GROSS_NOT_TRADE_WIN_RATE'
+    && Number.isSafeInteger(stats.sample_count) && stats.sample_count >= 0
+    && typeof observed === 'number' && Number.isSafeInteger(observed) && observed > 0 && observed <= stats.sample_count
+    && typeof value === 'number' && Number.isFinite(value) && (!isRate || (value >= 0 && value <= 100))
+    ? value.toFixed(digits) + '%' : 'N/A';
+}
+
+export function referenceGroups(stats: EodJournalResponse['stats'], scheme: EodSchemeStats) {
+  if (stats.statistics_scope !== 'MIXED_CLIENT_REFERENCE_NOT_VALIDATED_FORECAST'
+    || stats.model_validation_status !== 'NOT_VALIDATED' || stats.probability_calibrated !== false) return null;
+  const same = scheme.same_day_server_recorded_reference;
+  const other = scheme.retrospective_or_unverified_reference;
+  if (!same || !other || [same, other].some(group => group.statistics_basis !== 'RAW_REFERENCE_GROSS_NOT_TRADE_WIN_RATE'
+      || !Number.isSafeInteger(group.sample_count) || group.sample_count < 0)
+    || !Number.isSafeInteger(scheme.overall.sample_count)
+    || same.sample_count + other.sample_count !== scheme.overall.sample_count) return null;
+  return [
+    { label: '交易日当天服务端记录', stats: same },
+    { label: '事后 / 时间来源未验证', stats: other },
+  ];
 }
