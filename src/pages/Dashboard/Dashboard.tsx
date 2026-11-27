@@ -48,6 +48,7 @@ import type { FullQuote } from 'stock-sdk';
 import { formatHotBoardBreadth, formatNorthboundDisplay } from './dashboardHelpers';
 import { DashboardOuterView } from './DashboardOuterView';
 import { GlobalPulseStrip } from './GlobalPulseStrip';
+import { DecisionCockpit } from './DecisionCockpit';
 import styles from './Dashboard.module.css';
 
 // 主要指数
@@ -317,6 +318,7 @@ export function Dashboard() {
 
   return (
     <div className={styles.dashboard}>
+      <DecisionCockpit />
       <GlobalPulseStrip onSelectMarket={handleMarketSelect} />
       <div>
         <MarketSelectorBar

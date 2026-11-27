@@ -1,14 +1,14 @@
 {
   "schema": "stage5_reviewed_public_projection_v1",
-  "private_source_commit": "ccabb067de48e831e416b8c531959133152bd571",
-  "public_base_commit": "c0b7c5537a159a634b291e293c8cdbedcdff5fa3",
-  "scope": "Mixed-source reviewed public read-only frontend projection: pairing cache isolation, evidence freshness, and explicit unreviewed comparison gaps. Mock comparison rows are synthetic; no private account or backend records, credentials or full private parity. Adds native OTA activation receipts/readiness, public UI integration and synthetic emulator assertion; no private backend parity. Four-dimensional comparison display contract and synthetic positive/negative UI tests only; no private comparison admission or account payload projected. Withdraws expired comparison summary along with matrix; synthetic freshness regression. Mobile same-scope single-flight health resolver, bounded timeout and synthetic pairing contention regressions; existing emulator assertions unchanged.; asset-specific metrics header distinguishes observations and conditional calculations. R08: bounded descriptive reference group UI projection; synthetic desktop/mobile browser test, no live account or AI data.",
+  "private_source_commit": "6010dc6d9009a9ca6b4667af159a8a73ddc8b597",
+  "public_base_commit": "b9adecba3f60c2528e33ede6aaeec85509fb0b03",
+  "scope": "Mixed-source reviewed public read-only frontend projection: pairing cache isolation, evidence freshness, and explicit unreviewed comparison gaps. Mock comparison rows are synthetic; no private account or backend records, credentials or full private parity. Adds native OTA activation receipts/readiness, public UI integration and synthetic emulator assertion; no private backend parity. Four-dimensional comparison display contract and synthetic positive/negative UI tests only; no private comparison admission or account payload projected. Withdraws expired comparison summary along with matrix; synthetic freshness regression. Mobile same-scope single-flight health resolver, bounded timeout and synthetic pairing contention regressions; existing emulator assertions unchanged.; asset-specific metrics header distinguishes observations and conditional calculations. R08: bounded descriptive reference group UI projection; synthetic desktop/mobile browser test, no live account or AI data. R08 read-only cockpit and generic deferred research UI gate, synthetic tests only; no private AI implementation or account records.",
   "files": [
     {
       "path": ".github/workflows/build-apk.yml",
-      "public_blob_sha": "cad9d11ca2daff1cc37a563dccaa1cc9a0e55417",
+      "public_blob_sha": "c9452cc0433394ceecbe4d489e8d75b0e2d1abf0",
       "source_commit": null,
-      "projection_kind": "PUBLIC_ONLY_SYNTHETIC_TEST"
+      "projection_kind": "PUBLIC_ONLY"
     },
     {
       "path": "e2e/mock_server.py",
@@ -25,6 +25,12 @@
     {
       "path": "e2e/verify_playwright_mobile.mjs",
       "public_blob_sha": "763cb42906fedbf3c7d0e6094f0800877585888f",
+      "source_commit": null,
+      "projection_kind": "PUBLIC_ONLY_SYNTHETIC_TEST"
+    },
+    {
+      "path": "e2e/verify_r08_cockpit.mjs",
+      "public_blob_sha": "03cd63e7c805f916493738d3bcc39a7dfabde024",
       "source_commit": null,
       "projection_kind": "PUBLIC_ONLY_SYNTHETIC_TEST"
     },
@@ -51,6 +57,36 @@
       "public_blob_sha": "040fe90e3f4d513e1921213be0b74c5512ca04d7",
       "source_commit": "c89825589538ddb0ebc6805f9395f673871ca6e7",
       "projection_kind": "REVIEWED_ADAPTED_SUBSET"
+    },
+    {
+      "path": "src/pages/Dashboard/Dashboard.tsx",
+      "public_blob_sha": "82d9c5b5fdc6d76464e6d84d56f9e5d831bab6b5",
+      "source_commit": "6010dc6d9009a9ca6b4667af159a8a73ddc8b597",
+      "projection_kind": "REVIEWED_ADAPTED_SUBSET"
+    },
+    {
+      "path": "src/pages/Dashboard/DecisionCockpit.module.css",
+      "public_blob_sha": "16619853c4696602f90f9329b47aee2bbecc870d",
+      "source_commit": "6010dc6d9009a9ca6b4667af159a8a73ddc8b597",
+      "projection_kind": "EXACT_REVIEWED_SOURCE"
+    },
+    {
+      "path": "src/pages/Dashboard/DecisionCockpit.tsx",
+      "public_blob_sha": "acf72bc440b7ee28d8897a106f2b75b1ac803227",
+      "source_commit": "6010dc6d9009a9ca6b4667af159a8a73ddc8b597",
+      "projection_kind": "EXACT_REVIEWED_SOURCE"
+    },
+    {
+      "path": "src/pages/Dashboard/cockpitModel.test.ts",
+      "public_blob_sha": "35f8d80cdf1ff37290a1eaa1fee046b88b856627",
+      "source_commit": "6010dc6d9009a9ca6b4667af159a8a73ddc8b597",
+      "projection_kind": "EXACT_REVIEWED_SOURCE"
+    },
+    {
+      "path": "src/pages/Dashboard/cockpitModel.ts",
+      "public_blob_sha": "4e3b0066a8edf950b0a63f8fbec656655ce5d3e9",
+      "source_commit": "6010dc6d9009a9ca6b4667af159a8a73ddc8b597",
+      "projection_kind": "EXACT_REVIEWED_SOURCE"
     },
     {
       "path": "src/pages/EndOfDayPicker/EndOfDayPicker.tsx",
@@ -151,11 +187,23 @@
       "source_commit": "4550f18a6289fe5ccc57f953ea92130e18ed8d27"
     },
     {
+      "path": "src/services/researchUiGate.test.ts",
+      "public_blob_sha": "54ee924c7c4d775e22b9af55037df89b2139a588",
+      "source_commit": "6010dc6d9009a9ca6b4667af159a8a73ddc8b597",
+      "projection_kind": "EXACT_REVIEWED_SOURCE"
+    },
+    {
+      "path": "src/services/researchUiGate.ts",
+      "public_blob_sha": "4d48be6e9350b2bd6b928360382770e74dafad8a",
+      "source_commit": "6010dc6d9009a9ca6b4667af159a8a73ddc8b597",
+      "projection_kind": "EXACT_REVIEWED_SOURCE"
+    },
+    {
       "path": "src/services/xrayApi.ts",
       "public_blob_sha": "4112065b32b3b452291371c35a9cf52d3d00823e",
       "source_commit": "4550f18a6289fe5ccc57f953ea92130e18ed8d27"
     }
   ],
   "omission": "Public shell deliberately excludes desktop paper-book editing, private AI context, account records and private backend. No claim of full private parity.",
-  "prior_projection_source_commit": "a2bb069b0b82b653e84c6f4e9d3bebd4539e327a"
+  "prior_projection_source_commit": "ccabb067de48e831e416b8c531959133152bd571"
 }
