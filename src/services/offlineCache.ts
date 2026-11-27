@@ -43,7 +43,7 @@ export function isCacheableExpertEndpoint(path: string): boolean {
     return false;
   }
   return CACHEABLE_EXPERT_PREFIXES.some(
-    (prefix) => clean === prefix || clean.startsWith(prefix)
+    (prefix) => prefix.endsWith('/') ? clean.startsWith(prefix) : clean === prefix
   );
 }
 
@@ -94,9 +94,9 @@ export function readOfflineSnapshot<T>(
     if (!parsed || typeof parsed.fetched_at !== 'string' || !('payload' in parsed)) {
       return null;
     }
-    if (parsed.scope && parsed.scope !== scope) {
-      return null;
-    }
+    const fetched = Date.parse(parsed.fetched_at);
+    if (parsed.scope !== scope || parsed.key !== key || !Number.isFinite(fetched)
+        || fetched > Date.now()) return null;
     return {
       key: typeof parsed.key === 'string' ? parsed.key : key,
       scope: parsed.scope ?? scope,
@@ -119,12 +119,9 @@ export function getLatestOfflineSnapshotTime(scope = getMobileCacheScope()): str
     const k = storage.key(i);
     if (!k || !k.startsWith(prefix)) continue;
     try {
-      const parsed = JSON.parse(storage.getItem(k) ?? '') as { fetched_at?: unknown };
-      if (typeof parsed.fetched_at === 'string') {
-        if (!latest || parsed.fetched_at > latest) {
-          latest = parsed.fetched_at;
-        }
-      }
+      const key = k.slice(prefix.length);
+      const entry = readOfflineSnapshot(key, scope);
+      if (entry && (!latest || Date.parse(entry.fetched_at) > Date.parse(latest))) latest = entry.fetched_at;
     } catch {
       // ignore corrupted entry
     }

@@ -6,6 +6,7 @@
 
 import {
   getMobileCacheScope,
+  normalizeBackendUrl,
   getMobileConnectionConfig,
   hasConfiguredRemoteBackend,
   isNativeApp,
@@ -170,10 +171,15 @@ export function shouldUseRemoteDualChannel(): boolean {
 }
 
 export function buildApiUrl(path: string, baseUrl: string): string {
+  // Never resolve a protocol-relative, external or traversal URL with a bearer token.
+  if (!path.startsWith('/api/') || /[\\\x00-\x20]/.test(path) || path.includes('#')) {
+    throw new Error('无效 API 路径');
+  }
+  const parsed = new URL(path, 'https://api.invalid');
+  if (parsed.origin !== 'https://api.invalid' || !parsed.pathname.startsWith('/api/')
+      || /%(?:2f|5c|2e)/i.test(parsed.pathname)) throw new Error('无效 API 路径');
   if (!baseUrl) return path;
-  const cleanBase = baseUrl.replace(/\/+$/, '');
-  const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  return `${cleanBase}${cleanPath}`;
+  return normalizeBackendUrl(baseUrl) + path;
 }
 
 export async function probeBackendHealth(
@@ -191,6 +197,8 @@ export async function probeBackendHealth(
   try {
     const resp = await fetch(healthUrl, {
       method: 'GET',
+      redirect: 'error',
+      cache: 'no-store',
       headers: { Accept: 'application/json' },
       signal: controller?.signal,
     });
@@ -306,6 +314,7 @@ export async function apiFetch(
   options?: RequestInit & { skipAuth?: boolean; forceProbe?: boolean; timeoutMs?: number }
 ): Promise<{ response: Response; baseUrl: string; channel: BackendChannel }> {
   const { skipAuth, forceProbe, timeoutMs = requestTimeoutForPath(path), ...fetchInit } = options ?? {};
+  buildApiUrl(path, '');
   const scope = getMobileCacheScope();
   const { channel, baseUrl } = await resolveActiveBackendBase(Boolean(forceProbe));
   assertPairingScope(scope);
@@ -316,8 +325,8 @@ export async function apiFetch(
   const headers = buildAuthHeaders(fetchInit.headers, channel, skipAuth);
   const requestSignal = createRequestSignal(path, fetchInit.signal, timeoutMs);
   const finalInit: RequestInit = headers
-    ? { ...fetchInit, headers, signal: requestSignal.signal }
-    : { ...fetchInit, signal: requestSignal.signal };
+    ? { ...fetchInit, headers, signal: requestSignal.signal, redirect: 'error', cache: 'no-store' }
+    : { ...fetchInit, signal: requestSignal.signal, redirect: 'error', cache: 'no-store' };
   try {
     const response = await fetch(url, finalInit);
     assertPairingScope(scope);
@@ -341,6 +350,7 @@ export async function apiRequestJson<T>(
     onCacheFallback?: () => void;
   }
 ): Promise<T> {
+  buildApiUrl(path, '');
   const scope = getMobileCacheScope();
   const method = options?.method ?? 'GET';
   const allowCache = (options?.fallbackToCache ?? true) && method === 'GET' && isCacheableExpertEndpoint(path);
@@ -390,7 +400,9 @@ export async function apiRequestJson<T>(
       );
     }
 
-    const payload = (await response.json()) as T;
+    let payload: T;
+    try { payload = (await response.json()) as T; }
+    catch { throw new HttpStatusError(response.status, '后端 JSON 响应无效，不能用旧缓存掩盖错误'); }
     assertPairingScope(scope);
     if (channel !== 'offline' && statusSnapshot.channel === 'offline') {
       emitStatus({ channel, activeBaseUrl: baseUrl, offlineSnapshotFetchedAt: null, lastError: null });

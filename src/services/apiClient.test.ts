@@ -278,3 +278,55 @@ describe('apiClient dual-channel routing & offline cache', () => {
     expect(() => parsePairingCode(shortToken)).toThrow(/配对码缺少有效的设备配对令牌/);
   });
 });
+
+
+describe('R09 pairing and transport isolation', () => {
+  beforeEach(() => { vi.stubGlobal('localStorage', createMemoryStorage()); clearMobileConnectionConfig(); resetApiClientState(); });
+  afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+  it('rotates namespaces on A→B→A and drops legacy snapshots', () => {
+    const input = {lanUrl:'https://fixture.example',deviceToken:'synthetic-token-aaaaaaaa'};
+    const first = saveMobileConnectionConfig(input);
+    const scope = getMobileCacheScope(first);
+    expect(scope).toMatch(/^host_v3_[0-9a-f]{32}$/);
+    expect(getMobileCacheScope()).toBe(scope);
+    expect(getMobileCacheScope(saveMobileConnectionConfig({autoWebBundleSync:true}))).toBe(scope);
+    writeOfflineSnapshot('/api/workbench',{old:true},{sourceUrl:'fixture'});
+    saveMobileConnectionConfig({deviceToken:'synthetic-token-bbbbbbbb'});
+    const next = saveMobileConnectionConfig(input);
+    expect(getMobileCacheScope(next)).not.toBe(scope);
+    expect(readOfflineSnapshot('/api/workbench',scope)).toBeNull();
+  });
+  it('migrates legacy short-hash namespace without reusing old cached bytes', () => {
+    localStorage.setItem('tz.mobile.connection.v1',JSON.stringify({lanUrl:'https://fixture.example',remoteUrl:'',deviceToken:'synthetic-token-aaaaaaaa'}));
+    localStorage.setItem('tz.offline_snapshot.v1:host_deadbeef:/api/workbench','{"payload":{"old":true}}');
+    const scope=getMobileCacheScope();
+    expect(scope).toMatch(/^host_v3_/);
+    expect(getMobileCacheScope()).toBe(scope);
+    expect(localStorage.getItem('tz.offline_snapshot.v1:host_deadbeef:/api/workbench')).toBeNull();
+  });
+  it.each(['https://user:pass@fixture.example','https://fixture.example/a','https://fixture.example?x=1','https://fixture.example#x'])('rejects non-origin pairing URL %s', url => {
+    expect(()=>saveMobileConnectionConfig({lanUrl:url})).toThrow();
+  });
+  it.each(['//evil.example/api/workbench','/api/../private','/api/%2e%2e/private','/api/\\evil'])('refuses path escape %s before fetching', async path => {
+    const fetchMock=vi.fn();vi.stubGlobal('fetch',fetchMock);
+    await expect(apiRequestJson(path)).rejects.toThrow('无效 API 路径');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+  it('never follows an authenticated redirect or converts malformed JSON into an offline cache hit', async () => {
+    saveMobileConnectionConfig({lanUrl:'https://fixture.example',deviceToken:'synthetic-token-aaaaaaaa'});
+    writeOfflineSnapshot('/api/workbench',{old:true},{sourceUrl:'fixture'});
+    vi.stubGlobal('fetch',vi.fn(async (url:string,init?:RequestInit)=>{
+      expect(init?.redirect).toBe('error');expect(init?.cache).toBe('no-store');
+      return url.endsWith('/api/health')?{ok:true,status:200,json:async()=>({status:'ok'})}
+      :{ok:true,status:200,json:async()=>{throw new SyntaxError('invalid JSON')}};
+    }));
+    await expect(apiRequestJson('/api/workbench')).rejects.toThrow('JSON');
+  });
+  it('rejects stale namespace metadata or a future cache clock', () => {
+    saveMobileConnectionConfig({lanUrl:'https://fixture.example',deviceToken:'synthetic-token-aaaaaaaa'});
+    const scope=getMobileCacheScope(),key='tz.offline_snapshot.v1:'+scope+':/api/workbench';
+    const entry={key:'/api/workbench',payload:{x:1},fetched_at:'2099-01-01T00:00:00Z',scope};
+    localStorage.setItem(key,JSON.stringify(entry));expect(readOfflineSnapshot('/api/workbench')).toBeNull();
+    localStorage.setItem(key,JSON.stringify({...entry,fetched_at:'2020-01-01T00:00:00Z',scope:undefined}));expect(readOfflineSnapshot('/api/workbench')).toBeNull();
+  });
+});
